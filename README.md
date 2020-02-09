@@ -1,2 +1,2 @@
 # BinarySanctity
-Rudimentary malware scoring utility (comp sci II semster project)
+Rudimentary malware scoring utility (comp sci I semster project)
