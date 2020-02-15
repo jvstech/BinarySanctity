@@ -10,6 +10,8 @@
 //!
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class DOSHeader
 {
@@ -28,66 +30,86 @@ public class DOSHeader
   private short overlayNumber_;
   private int peHeaderOffset_;
 
+  // Two bytes: 'M' 'Z' (representing the initials of Mark Zbikowski, one of the
+  // leading developers of MS-DOS)
   public byte[] getSignature()
   {
     return signature_;
   }
 
+  // Number of bytes in the last page of the file
   public int getLastPageSize()
   {
     return lastPageSize_;
   }
 
+  // Number of pages in the file
   public int getTotalPageCount()
   {
     return totalPageCount_;
   }
 
+  // Relocations
   public int getRelocationEntryCount()
   {
     return relocationEntryCount_;
   }
 
+  // Size of the header in paragraphs
   public int getHeaderParagraphSize()
   {
     return headerParagraphSize_;
   }
 
+  // Minimum extra paragraphs needed
   public int getMinAllocatedParagraphCount()
   {
     return minAllocatedParagraphCount_;
   }
 
+  // Maximum extra paragraphs needed
   public int getMaxAllocatedParagraphCount()
   {
     return maxAllocatedParagraphCount_;
   }
 
+  // Initial (relative) stack segment value
   public int getInitialSSOffset()
   {
     return initialSSOffset_;
   }
 
+  // Initial stack pointer value
   public int getInitialSP()
   {
     return initialSP_;
   }
 
+  // Checksum
   public int getChecksum()
   {
     return checksum_;
   }
 
+  // Initial instruction pointer value and (relative) code segment value
   public int getCSIPOffset()
   {
     return csipOffset_;
   }
 
+  // File address of the relocation table
   public int getRelocationTableOffset()
   {
     return relocationTableOffset_;
   }
 
+  // Overlay number
+  public short getOverlayNumber()
+  {
+    return overlayNumber_;
+  }
+
+  // File address of the PE header
   public int getPEHeaderOffset()
   {
     return peHeaderOffset_;
@@ -123,12 +145,13 @@ public class DOSHeader
       dosHeader.csipOffset_ = stream.readInt32();
       dosHeader.relocationTableOffset_ = stream.readUInt16();
       dosHeader.overlayNumber_ = stream.readInt16();
-      // skip bytes
+      // skip reserved bytes
       stream.read(32);
       dosHeader.peHeaderOffset_ = stream.readInt32();
     }
     catch (BadExecutableFormatException exeEx)
     {
+      // rethrow
       throw exeEx;
     }
     catch (Exception ex)
@@ -137,5 +160,12 @@ public class DOSHeader
     }
 
     return dosHeader;
+  }
+
+  public static DOSHeader fromFile(String executableFilePath)
+    throws BadExecutableFormatException, IOException
+  {
+    return fromStream(new ByteIOStream(Files.readAllBytes(Paths.get(
+      executableFilePath))));
   }
 }

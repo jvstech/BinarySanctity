@@ -13,6 +13,7 @@
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public class ByteIOStream
@@ -138,6 +139,7 @@ public class ByteIOStream
   }
 
   public byte[] read(int count)
+    throws EndOfStreamException
   {
     if (count <= 0)
     {
@@ -145,30 +147,55 @@ public class ByteIOStream
     }
 
     byte[] result = new byte[count];
-    read(result, 0, count);
+    if (read(result, 0, count) == 0)
+    {
+      throw new EndOfStreamException();
+    }
+
     return result;
   }
 
   public byte readByte()
+    throws EndOfStreamException
   {
     byte[] result = new byte[1];
-    read(result, 0, 1);
+    if (read(result, 0, 1) == 0)
+    {
+      throw new EndOfStreamException();
+    }
+
     return result[0];
   }
 
-  public short readInt16()
+  public int readUByte()
+    throws EndOfStreamException
   {
-    short result = ByteBuffer.wrap(read(2)).getShort();
+    byte[] result = new byte[1];
+    if (read(result, 0, 1) == 0)
+    {
+      throw new EndOfStreamException();
+    }
+    return (result[0] & 0xff);
+  }
+
+  public short readInt16()
+    throws EndOfStreamException
+  {
+    short result = ByteBuffer.wrap(read(2))
+      .order(ByteOrder.LITTLE_ENDIAN)
+      .getShort();
     return result;
   }
 
   public int readUInt16()
+    throws EndOfStreamException
   {
     byte[] bytes = read(2);
-    return ((bytes[1] & 0xff) << 8 | (bytes[0] & 0xff));
+    return ((bytes[1] & 0xff) << 8) | (bytes[0] & 0xff);
   }
 
   public int readInt32()
+    throws EndOfStreamException
   {
     byte[] bytes = read(4);
     return ((bytes[3] & 0xff) << 24) |
@@ -177,7 +204,22 @@ public class ByteIOStream
       (bytes[0] & 0xff);
   }
 
+  public long readInt64()
+    throws EndOfStreamException
+  {
+    byte[] bytes = read(8);
+    return ((bytes[7] & 0xffL) << 56) |
+      ((bytes[6] & 0xffL) << 48) |
+      ((bytes[5] & 0xffL) << 40) |
+      ((bytes[4] & 0xffL) << 32) |
+      ((bytes[3] & 0xffL) << 24) |
+      ((bytes[2] & 0xffL) << 16) |
+      ((bytes[1] & 0xffL) << 8) |
+      (bytes[0] & 0xffL);
+  }
+
   public byte[] readToEnd()
+    throws EndOfStreamException
   {
     return read(length_ - position_);
   }
