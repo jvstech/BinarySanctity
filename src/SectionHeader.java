@@ -6,23 +6,70 @@
 //! @description    Represents a row in a PE section table.
 //!
 
-public class SectionHeader
-{
-  private OptionalHeader optionalHeader_;
-  private String name_;
-  private int virtualSize_;
-  private int virtualAddress_;
-  private int sizeOfRawData_;
-  private int pointerToRawData_;
-  private int pointerToRelocations_;
-  private int pointerToLineNumbers_;
-  private int numberOfRelocations_;
-  private int numberOfLineNumbers_;
-  private int characteristicsValue_;
+import java.io.IOException;
 
-  public OptionalHeader getOptionalHeader()
+public class SectionHeader implements Header
+{
+  private static final int HEADER_SIZE = 40;
+
+  private final PortableExecutableFileChannel peFile_;
+
+  enum Offsets
   {
-    return optionalHeader_;
+    NAME                    (0x00),
+    VIRTUAL_SIZE            (0x08),
+    VIRTUAL_ADDRESS         (0x0C),
+    SIZE_OF_RAW_DATA        (0x10),
+    POINTER_TO_RAW_DATA     (0x14),
+    POINTER_TO_RELOCATIONS  (0x18),
+    POINTER_TO_LINE_NUMBERS (0x1C),
+    NUMBER_OF_RELOCATIONS   (0x20),
+    NUMBER_OF_LINE_NUMBERS  (0x22),
+    CHARACTERISTICS         (0x24)
+    ;
+
+    public final int position;
+
+    private Offsets(int offset)
+    {
+      position = offset;
+    }
+  }
+
+  private final String name_;
+  private final int index_;
+  private final RelativeVirtualAddress rva_;
+
+  public SectionHeader(PortableExecutableFileChannel peFile, int sectionIndex)
+    throws IOException, EndOfStreamException
+  {
+    peFile_ = peFile;
+    index_ = sectionIndex;
+    //byte[] nameBytes = stream.read(8);
+    byte[] nameBytes = peFile_.read(relpos(Offsets.NAME.position), 8);
+    name_ = new String(nameBytes, 0, nameBytes.length);
+    rva_ = new RelativeVirtualAddress(this, index_);
+  }
+
+  @Override
+  public int getHeaderSize()
+  {
+    return HEADER_SIZE;
+  }
+
+  @Override
+  public long getStartOffset()
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.getOptionalHeader().getFullEndOffset() +
+      (getHeaderSize() * index_);
+  }
+
+  @Override
+  public long getEndOffset()
+    throws IOException, EndOfStreamException
+  {
+    return getStartOffset() + getHeaderSize();
   }
 
   // An 8-byte, null-padded UTF-8 encoded string. If the string is exactly 8
@@ -41,8 +88,9 @@ public class SectionHeader
   // greater than SizeOfRawData, the section is zero-padded. This field is valid
   // only for executable images and should be set to zero for object files.
   public int getVirtualSize()
+    throws IOException, EndOfStreamException
   {
-    return virtualSize_;
+    return peFile_.readInt32(relpos(Offsets.VIRTUAL_SIZE.position));
   }
 
   // For executable images, the address of the first byte of the section
@@ -51,8 +99,9 @@ public class SectionHeader
   // is applied; for simplicity, compilers should set this to zero. Otherwise,
   // it is an arbitrary value that is subtracted from offsets during relocation.
   public int getVirtualAddress()
+    throws IOException, EndOfStreamException
   {
-    return virtualAddress_;
+    return peFile_.readInt32(relpos(Offsets.VIRTUAL_ADDRESS.position));
   }
 
   // The size of the section (for object files) or the size of the initialized
@@ -63,8 +112,9 @@ public class SectionHeader
   // possible for SizeOfRawData to be greater than VirtualSize as well. When a
   // section contains only uninitialized data, this field should be zero.
   public int getSizeOfRawData()
+    throws IOException, EndOfStreamException
   {
-    return sizeOfRawData_;
+    return peFile_.readInt32(relpos(Offsets.SIZE_OF_RAW_DATA.position));
   }
 
   // The file pointer to the first page of the section within the COFF file. For
@@ -73,42 +123,63 @@ public class SectionHeader
   // boundary for best performance. When a section contains only uninitialized
   // data, this field should be zero.
   public int getPointerToRawData()
+    throws IOException, EndOfStreamException
   {
-    return pointerToRawData_;
+    return peFile_.readInt32(relpos(Offsets.POINTER_TO_RAW_DATA.position));
   }
 
   // The file pointer to the beginning of relocation entries for the section.
   // This is set to zero for executable images or if there are no relocations.
   public int getPointerToRelocations()
+    throws IOException, EndOfStreamException
   {
-    return pointerToRelocations_;
+    return peFile_.readInt32(relpos(Offsets.POINTER_TO_RELOCATIONS.position));
   }
 
   // The file pointer to the beginning of line-number entries for the section.
   // This is set to zero if there are no COFF line numbers. This value should be
   // zero for an image because COFF debugging information is deprecated.
   public int getPointerToLineNumbers()
+    throws IOException, EndOfStreamException
   {
-    return pointerToLineNumbers_;
+    return peFile_.readInt32(relpos(Offsets.POINTER_TO_LINE_NUMBERS.position));
   }
 
   // The number of relocation entries for the section. This is set to zero for
   // executable images.
   public int getNumberOfRelocations()
+    throws IOException, EndOfStreamException
   {
-    return numberOfRelocations_;
+    return peFile_.readUInt16(relpos(Offsets.NUMBER_OF_RELOCATIONS.position));
   }
 
   // The number of line-number entries for the section. This value should be
   // zero for an image because COFF debugging information is deprecated.
   public int getNumberOfLineNumbers()
+    throws IOException, EndOfStreamException
   {
-    return numberOfLineNumbers_;
+    return peFile_.readUInt16(relpos(Offsets.NUMBER_OF_LINE_NUMBERS.position));
   }
 
   // The flags that describe the characteristics of the section.
-  public int getCharacteristicsValue()
+  public int getCharacteristics()
+    throws IOException, EndOfStreamException
   {
-    return characteristicsValue_;
+    return peFile_.readInt32(relpos(Offsets.CHARACTERISTICS.position));
+  }
+
+  public RelativeVirtualAddress getRVA()
+  {
+    return rva_;
+  }
+
+  private long relpos(long pos)
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.getDOSHeader().getPEHeaderOffset() +
+      peFile_.getPEHeader().getHeaderSize() +
+      peFile_.getPEHeader().getSizeOfOptionalHeader() +
+      (HEADER_SIZE * index_) +
+      pos;
   }
 }

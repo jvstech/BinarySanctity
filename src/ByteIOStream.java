@@ -80,6 +80,11 @@ public class ByteIOStream
     }
   }
 
+  public byte[] getBuffer()
+  {
+    return buffer_;
+  }
+
   public int seekBegin()
   {
     setPosition(0);
@@ -155,18 +160,6 @@ public class ByteIOStream
     return result;
   }
 
-  public byte readByte()
-    throws EndOfStreamException
-  {
-    byte[] result = new byte[1];
-    if (read(result, 0, 1) == 0)
-    {
-      throw new EndOfStreamException();
-    }
-
-    return result[0];
-  }
-
   public int readUByte()
     throws EndOfStreamException
   {
@@ -204,24 +197,27 @@ public class ByteIOStream
       (bytes[0] & 0xff);
   }
 
-  public long readInt64()
+  public String readCString()
     throws EndOfStreamException
   {
-    byte[] bytes = read(8);
-    return ((bytes[7] & 0xffL) << 56) |
-      ((bytes[6] & 0xffL) << 48) |
-      ((bytes[5] & 0xffL) << 40) |
-      ((bytes[4] & 0xffL) << 32) |
-      ((bytes[3] & 0xffL) << 24) |
-      ((bytes[2] & 0xffL) << 16) |
-      ((bytes[1] & 0xffL) << 8) |
-      (bytes[0] & 0xffL);
+    StringBuilder sb = new StringBuilder();
+    int charVal = readUByte();
+    while (charVal > 0)
+    {
+      sb.append((char)charVal);
+      charVal = readUByte();
+    }
+
+    return sb.toString();
   }
 
-  public byte[] readToEnd()
-    throws EndOfStreamException
+  public void write(int position, byte[] buffer, int offset, int count)
+    throws IOException
   {
-    return read(length_ - position_);
+    int oldPos = position_;
+    setPosition(position);
+    write(buffer, offset, count);
+    setPosition(oldPos);
   }
 
   public void write(byte[] buffer, int offset, int count)

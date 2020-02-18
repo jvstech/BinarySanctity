@@ -10,148 +10,182 @@
 //!                 size of the options header that follows the PE header.
 //!
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 
-public class PEHeader
+public class PEHeader implements Header
 {
-  private DOSHeader dosHeader_;
-  private long headerSize_;
-  private byte[] signature_;
-  private int machineValue_;
-  private int numberOfSections_;
-  private int timeDateStampValue_;
-  private int pointerToSymbolTable_;
-  private int numberOfSymbols_;
-  private int sizeOfOptionalHeader_;
-  private int characteristics_;
+  private final int HEADER_SIZE = 0x18;
+  private final PortableExecutableFileChannel peFile_;
 
-  public DOSHeader getDOSHeader()
+  enum Offsets
   {
-    return dosHeader_;
+    SIGNATURE               (0x00),
+    MACHINE_VALUE           (0x04),
+    NUMBER_OF_SECTIONS      (0x06),
+    TIME_DATE_STAMP_VALUE   (0x08),
+    POINTER_TO_SYMBOL_TABLE (0x0C),
+    NUMBER_OF_SYMBOLS       (0x10),
+    SIZE_OF_OPTIONAL_HEADER (0x14),
+    CHARACTERISTICS         (0x16)
+    ;
+
+    public final int position;
+
+    private Offsets(int offset)
+    {
+      position = offset;
+    }
   }
 
-  public long getHeaderSize()
+  public PEHeader(PortableExecutableFileChannel peFile)
   {
-    return headerSize_;
+    if (peFile == null)
+    {
+      throw new NullPointerException();
+    }
+
+    peFile_ = peFile;
+  }
+
+  public PortableExecutableFileChannel getPEFile()
+  {
+    return peFile_;
+  }
+
+  @Override
+  public int getHeaderSize()
+  {
+    return HEADER_SIZE;
+  }
+
+  @Override
+  public long getStartOffset()
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.getDOSHeader().getStartOffset() +
+      peFile_.getDOSHeader().getPEHeaderOffset();
+  }
+
+  @Override
+  public long getEndOffset()
+    throws IOException, EndOfStreamException
+  {
+    return getStartOffset() + getHeaderSize();
   }
 
   // Four bytes expected to be"PE\0\0"
   public byte[] getSignature()
+    throws IOException, EndOfStreamException
   {
-    return signature_;
+    return peFile_.read(relpos(Offsets.SIGNATURE.position), 4);
   }
 
   // Number that identifies the type of target machine. This number represents
   // a CPU type, and this executable file can only be run on the specified
   // machine or on a system that emulates the specified machine.
   public int getMachineValue()
+    throws IOException, EndOfStreamException
   {
-    return machineValue_;
+    return peFile_.readUInt16(relpos(Offsets.MACHINE_VALUE.position));
   }
 
   // Indicates the size of the section table, which immediately follows the
   // executable headers.
   public int getNumberOfSections()
+    throws IOException, EndOfStreamException
   {
-    return numberOfSections_;
+    return peFile_.readUInt16(relpos(Offsets.NUMBER_OF_SECTIONS.position));
   }
 
   // Indicates when the file was created. Represents the low 32-bits of the
   // number of seconds since the Unix epoch (00:00 1 January 1970).
   public int getTimeDateStampValue()
+    throws IOException, EndOfStreamException
   {
-    return timeDateStampValue_;
+    return peFile_.readInt32(relpos(Offsets.TIME_DATE_STAMP_VALUE.position));
   }
 
   // File offset of the COFF symbol table, or zero if no COFF symbol table is
   // present. This value should be zero for all PE executable files.
   public int getPointerToSymbolTable()
+    throws IOException, EndOfStreamException
   {
-    return pointerToSymbolTable_;
+    return peFile_.readInt32(relpos(Offsets.POINTER_TO_SYMBOL_TABLE.position));
   }
 
   // Number of entries in the symbol table. This data can be used to locate the
   // string table, which immediately follows the symbol table. This value should
   // be zero for all PE executable files.
   public int getNumberOfSymbols()
+    throws IOException, EndOfStreamException
   {
-    return numberOfSymbols_;
+    return peFile_.readInt32(relpos(Offsets.NUMBER_OF_SYMBOLS.position));
   }
 
   // Size of the options header (officially named the 'Optional' header), which
   // is required for executable files but not for object files. This value
   // should be zero for object files.
   public int getSizeOfOptionalHeader()
+    throws IOException, EndOfStreamException
   {
-    return sizeOfOptionalHeader_;
+    return peFile_.readUInt16(relpos(Offsets.SIZE_OF_OPTIONAL_HEADER.position));
   }
 
   // The flags that indicate the attributes of the file.
   public int getCharacteristics()
+    throws IOException, EndOfStreamException
   {
-    return characteristics_;
+    return peFile_.readUInt16(relpos(Offsets.CHARACTERISTICS.position));
   }
 
   public Date getTimeDateStamp()
+    throws IOException, EndOfStreamException
   {
-    return Date.from(Instant.ofEpochSecond(timeDateStampValue_));
+    return Date.from(Instant.ofEpochSecond(getTimeDateStampValue()));
   }
 
   public MachineType getMachine()
+    throws IOException, EndOfStreamException
   {
-    return MachineType.fromInt(machineValue_);
+    return MachineType.fromInt(getMachineValue());
   }
 
   public long getOptionalHeaderOffset()
+    throws IOException, EndOfStreamException
   {
-    return getDOSHeader().getPEHeaderOffset() + headerSize_;
+    return peFile_.getDOSHeader().getPEHeaderOffset() + HEADER_SIZE;
   }
 
   public boolean isValid()
+    throws IOException
   {
-    return (signature_ != null && signature_.length == 4 &&
-      signature_[0] == 0x50 /*'P'*/ && signature_[1] == 0x45 /*E*/ &&
-      signature_[2] == 0 && signature_[3] == 0);
-  }
-
-  public static PEHeader fromStream(ByteIOStream stream, DOSHeader dosHeader)
-    throws BadExecutableFormatException
-  {
-    PEHeader pe = new PEHeader();
     try
     {
-      stream.setPosition(dosHeader.getPEHeaderOffset());
-      pe.dosHeader_ = dosHeader;
-      int startPos = stream.getPosition();
-
-      pe.signature_ = stream.read(4);
-      if (!pe.isValid())
-      {
-        throw new BadExecutableFormatException("Invalid PE header.");
-      }
-
-      pe.machineValue_ = stream.readUInt16();
-      pe.numberOfSections_ = stream.readUInt16();
-      pe.timeDateStampValue_ = stream.readInt32();
-      pe.pointerToSymbolTable_ = stream.readInt32();
-      pe.numberOfSymbols_ = stream.readInt32();
-      pe.sizeOfOptionalHeader_ = stream.readUInt16();
-      pe.characteristics_ = stream.readUInt16();
-
-      int readCount = stream.getPosition() - startPos;
-      pe.headerSize_ = readCount;
+      byte[] sig = getSignature();
+      return (sig != null && sig.length == 4 &&
+        sig[0] == 0x50 /*'P'*/ && sig[1] == 0x45 /*E*/ &&
+        sig[2] == 0 && sig[3] == 0);
     }
-    catch (BadExecutableFormatException exeEx)
+    catch (EndOfStreamException eofEx)
     {
-      // rethrow
-      throw exeEx;
+      return false;
     }
-    catch (Exception ex)
-    {
-      return new PEHeader();
-    }
+  }
 
-    return pe;
+  void validate()
+    throws IOException, BadExecutableFormatException
+  {
+    if (!isValid())
+    {
+      throw new BadExecutableFormatException();
+    }
+  }
+
+  private long relpos(long pos)
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.getDOSHeader().getPEHeaderOffset() + pos;
   }
 }

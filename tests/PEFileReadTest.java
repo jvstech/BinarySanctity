@@ -8,8 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,10 +15,11 @@ class PEFileReadTest
 {
   @Test
   void dosHeaderFromStream()
-    throws IOException, BadExecutableFormatException, URISyntaxException
+    throws Exception
   {
-    byte[] decodedData = getDecodedData();
-    DOSHeader dosHeader = DOSHeader.fromStream(new ByteIOStream(decodedData));
+    PortableExecutableFileChannel peFile =
+      new PortableExecutableFileChannel(getDecodedData());
+    DOSHeader dosHeader = peFile.getDOSHeader();
     assertTrue(dosHeader.isValid());
     assertEquals(144, dosHeader.getLastPageSize());
     assertEquals(3, dosHeader.getTotalPageCount());
@@ -34,11 +33,9 @@ class PEFileReadTest
   void peHeaderFromStream()
     throws Exception
   {
-    byte[] decodedData = getDecodedData();
-    ByteIOStream stream = new ByteIOStream(decodedData);
-    DOSHeader dosHeader = DOSHeader.fromStream(stream);
-    PEHeader peHeader = PEHeader.fromStream(stream, dosHeader);
-
+    PortableExecutableFileChannel peFile =
+      new PortableExecutableFileChannel(getDecodedData());
+    PEHeader peHeader = peFile.getPEHeader();
     assertTrue(peHeader.isValid());
     assertEquals(MachineType.AMD64, peHeader.getMachine());
     assertEquals(6, peHeader.getNumberOfSections());
@@ -46,8 +43,9 @@ class PEFileReadTest
     assertEquals(0, peHeader.getPointerToSymbolTable());
     assertEquals(0, peHeader.getNumberOfSymbols());
     assertEquals(240, peHeader.getSizeOfOptionalHeader());
-    assertEquals((CharacteristicTypes.EXECUTABLE_IMAGE |
-      CharacteristicTypes.LARGE_ADDRESS_AWARE), peHeader.getCharacteristics());
+    assertEquals((PECharacteristicTypes.EXECUTABLE_IMAGE |
+      PECharacteristicTypes.LARGE_ADDRESS_AWARE),
+      peHeader.getCharacteristics());
   }
 
   @Test
@@ -55,10 +53,9 @@ class PEFileReadTest
     throws Exception
   {
     byte[] decodedData = getDecodedData();
-    ByteIOStream stream = new ByteIOStream(decodedData);
-    DOSHeader dosHeader = DOSHeader.fromStream(stream);
-    PEHeader peHeader = PEHeader.fromStream(stream, dosHeader);
-    OptionalHeader optHeader = OptionalHeader.fromStream(stream, peHeader);
+    PortableExecutableFileChannel peFile =
+      new PortableExecutableFileChannel(decodedData);
+    OptionalHeader optHeader = peFile.getOptionalHeader();
 
     assertTrue(optHeader.isValid());
     assertEquals(ImageStateType.PE64, optHeader.getImageState());
@@ -90,7 +87,7 @@ class PEFileReadTest
     assertEquals(0x100000, optHeader.getSizeOfStackReserve());
     assertEquals(0x1000, optHeader.getSizeOfStackCommit());
     assertEquals(0x100000, optHeader.getSizeOfHeapReserve());
-    assertEquals(0x1000, optHeader.getSizeOfStackCommit());
+    assertEquals(0x1000, optHeader.getSizeOfHeapCommit());
     assertEquals(0, optHeader.getLoaderFlags());
     assertEquals(16, optHeader.getNumberOfRvaAndSizes());
   }

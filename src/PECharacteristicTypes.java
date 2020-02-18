@@ -1,4 +1,4 @@
-public class CharacteristicTypes
+public class PECharacteristicTypes
 {
   public static final int RELOCS_STRIPPED = 0x0001;
   public static final int EXECUTABLE_IMAGE = 0x0002;

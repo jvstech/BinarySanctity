@@ -13,159 +13,205 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class DOSHeader
+public class DOSHeader implements Header
 {
-  private byte[] signature_;
-  private int lastPageSize_;
-  private int totalPageCount_;
-  private int relocationEntryCount_;
-  private int headerParagraphSize_;
-  private int minAllocatedParagraphCount_;
-  private int maxAllocatedParagraphCount_;
-  private int initialSSOffset_;
-  private int initialSP_;
-  private int checksum_;
-  private int csipOffset_;
-  private int relocationTableOffset_;
-  private short overlayNumber_;
-  private int peHeaderOffset_;
+  private final PortableExecutableFileChannel peFile_;
+
+  enum Offsets
+  {
+    SIGNATURE                     (0x00),
+    LAST_PAGE_SIZE                (0x02),
+    TOTAL_PAGE_COUNT              (0x04),
+    RELOCATION_ENTRY_COUNT        (0x06),
+    HEADER_PARAGRAPH_SIZE         (0x08),
+    MIN_ALLOCATED_PARAGRAPH_COUNT (0x0A),
+    MAX_ALLOCATED_PARAGRAPH_COUNT (0x0C),
+    INITIAL_SS_OFFSET             (0x0E),
+    INITIAL_SP                    (0x10),
+    CHECKSUM                      (0x12),
+    CS_IP_OFFSET                  (0x14),
+    RELOCATION_TABLE_OFFSET       (0x18),
+    OVERLAY_NUMBER                (0x1A),
+    OEM_ID                        (0x24),
+    OEM_ID_INFO                   (0x26),
+    PE_HEADER_OFFSET              (0x3C)
+    ;
+
+    public final int position;
+
+    private Offsets(int offset)
+    {
+      position = offset;
+    }
+  }
+
+  public DOSHeader(PortableExecutableFileChannel peFile)
+  {
+    if (peFile == null)
+    {
+      throw new NullPointerException();
+    }
+
+    peFile_ = peFile;
+  }
+
+  public PortableExecutableFileChannel getPEFile()
+  {
+    return peFile_;
+  }
 
   // Two bytes: 'M' 'Z' (representing the initials of Mark Zbikowski, one of the
   // leading developers of MS-DOS)
   public byte[] getSignature()
+    throws IOException, EndOfStreamException
   {
-    return signature_;
+    return peFile_.read(Offsets.SIGNATURE.position, 2);
   }
 
   // Number of bytes in the last page of the file
   public int getLastPageSize()
+    throws IOException, EndOfStreamException
   {
-    return lastPageSize_;
+    return peFile_.readUInt16(Offsets.LAST_PAGE_SIZE.position);
   }
 
   // Number of pages in the file
   public int getTotalPageCount()
+    throws IOException, EndOfStreamException
   {
-    return totalPageCount_;
+    return peFile_.readUInt16(Offsets.TOTAL_PAGE_COUNT.position);
   }
 
   // Relocations
   public int getRelocationEntryCount()
+    throws IOException, EndOfStreamException
   {
-    return relocationEntryCount_;
+    return peFile_.readUInt16(Offsets.RELOCATION_ENTRY_COUNT.position);
   }
 
   // Size of the header in paragraphs
   public int getHeaderParagraphSize()
+    throws IOException, EndOfStreamException
   {
-    return headerParagraphSize_;
+    return peFile_.readUInt16(Offsets.HEADER_PARAGRAPH_SIZE.position);
   }
 
   // Minimum extra paragraphs needed
   public int getMinAllocatedParagraphCount()
+    throws IOException, EndOfStreamException
   {
-    return minAllocatedParagraphCount_;
+    return peFile_.readUInt16(Offsets.MIN_ALLOCATED_PARAGRAPH_COUNT.position);
   }
 
   // Maximum extra paragraphs needed
   public int getMaxAllocatedParagraphCount()
+    throws IOException, EndOfStreamException
   {
-    return maxAllocatedParagraphCount_;
+    return peFile_.readUInt16(Offsets.MAX_ALLOCATED_PARAGRAPH_COUNT.position);
   }
 
   // Initial (relative) stack segment value
   public int getInitialSSOffset()
+    throws IOException, EndOfStreamException
   {
-    return initialSSOffset_;
+    return peFile_.readUInt16(Offsets.INITIAL_SS_OFFSET.position);
   }
 
   // Initial stack pointer value
   public int getInitialSP()
+    throws IOException, EndOfStreamException
   {
-    return initialSP_;
+    return peFile_.readUInt16(Offsets.INITIAL_SP.position);
   }
 
   // Checksum
   public int getChecksum()
+    throws IOException, EndOfStreamException
   {
-    return checksum_;
+    return peFile_.readUInt16(Offsets.CHECKSUM.position);
   }
 
   // Initial instruction pointer value and (relative) code segment value
   public int getCSIPOffset()
+    throws IOException, EndOfStreamException
   {
-    return csipOffset_;
+    return peFile_.readInt32(Offsets.CS_IP_OFFSET.position);
   }
 
   // File address of the relocation table
   public int getRelocationTableOffset()
+    throws IOException, EndOfStreamException
   {
-    return relocationTableOffset_;
+    return peFile_.readUInt16(Offsets.RELOCATION_TABLE_OFFSET.position);
   }
 
   // Overlay number
   public short getOverlayNumber()
+    throws IOException, EndOfStreamException
   {
-    return overlayNumber_;
+    return peFile_.readInt16(Offsets.OVERLAY_NUMBER.position);
+  }
+
+  // OEM ID
+  public int getOEMID()
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.readUInt16(Offsets.OEM_ID.position);
+  }
+
+  // OEM ID information
+  public int getOEMIDInfo()
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.readUInt16(Offsets.OEM_ID_INFO.position);
   }
 
   // File address of the PE header
   public int getPEHeaderOffset()
+    throws IOException, EndOfStreamException
   {
-    return peHeaderOffset_;
+    return peFile_.readInt32(Offsets.PE_HEADER_OFFSET.position);
   }
 
   public boolean isValid()
+    throws IOException
   {
-    return (signature_ != null && signature_.length == 2 &&
-      signature_[0] == 0x4d /*'M'*/ && signature_[1] == 0x5a /*'Z'*/);
-  }
-
-  public static DOSHeader fromStream(ByteIOStream stream)
-    throws BadExecutableFormatException
-  {
-    DOSHeader dosHeader = new DOSHeader();
     try
     {
-      dosHeader.signature_ = stream.read(2);
-      if (!dosHeader.isValid())
-      {
-        throw new BadExecutableFormatException("Invalid DOS header.");
-      }
-
-      dosHeader.lastPageSize_ = stream.readUInt16();
-      dosHeader.totalPageCount_ = stream.readUInt16();
-      dosHeader.relocationEntryCount_ = stream.readUInt16();
-      dosHeader.headerParagraphSize_ = stream.readUInt16();
-      dosHeader.minAllocatedParagraphCount_ = stream.readUInt16();
-      dosHeader.maxAllocatedParagraphCount_ = stream.readUInt16();
-      dosHeader.initialSSOffset_ = stream.readUInt16();
-      dosHeader.initialSP_ = stream.readUInt16();
-      dosHeader.checksum_ = stream.readUInt16();
-      dosHeader.csipOffset_ = stream.readInt32();
-      dosHeader.relocationTableOffset_ = stream.readUInt16();
-      dosHeader.overlayNumber_ = stream.readInt16();
-      // skip reserved bytes
-      stream.read(32);
-      dosHeader.peHeaderOffset_ = stream.readInt32();
+      byte[] sig = getSignature();
+      return (sig != null && sig.length == 2 &&
+        sig[0] == 0x4d /*'M'*/ && sig[1] == 0x5a /*'Z'*/);
     }
-    catch (BadExecutableFormatException exeEx)
+    catch (EndOfStreamException eofEx)
     {
-      // rethrow
-      throw exeEx;
+      return false;
     }
-    catch (Exception ex)
-    {
-      return new DOSHeader();
-    }
-
-    return dosHeader;
   }
 
-  public static DOSHeader fromFile(String executableFilePath)
-    throws BadExecutableFormatException, IOException
+  @Override
+  public int getHeaderSize()
   {
-    return fromStream(new ByteIOStream(Files.readAllBytes(Paths.get(
-      executableFilePath))));
+    return 64;
+  }
+
+  @Override
+  public long getStartOffset()
+  {
+    return peFile_.getStartPosition();
+  }
+
+  @Override
+  public long getEndOffset()
+  {
+    return getStartOffset() + getHeaderSize();
+  }
+
+  void validate()
+    throws IOException, BadExecutableFormatException
+  {
+    if (!isValid())
+    {
+      throw new BadExecutableFormatException();
+    }
   }
 }
