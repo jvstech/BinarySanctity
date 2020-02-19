@@ -19,6 +19,7 @@ public class DataDirectory implements Header
     {
       virtualAddress_ = peFile_.readInt32(relpos(0L));
       size_ = peFile_.readInt32(relpos(4L));
+      rva_ = new RelativeVirtualAddress(virtualAddress_, peFile_.getSections());
     }
     catch (EndOfStreamException eofEx)
     {

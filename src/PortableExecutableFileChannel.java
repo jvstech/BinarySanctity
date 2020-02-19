@@ -12,7 +12,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   private final SectionHeader[] sections_;
   private final HashMap<String, SectionHeader> sectionTable_;
   private final DataDirectory[] dataDirectories_;
-  //private final ExportDirectory exportDirectory_;
+  private final ExportDirectory exportDirectory_;
   //private final ImportDirectory[] importDirectories_;
 
   public PortableExecutableFileChannel(FileInputStream fileInputStream)
@@ -26,6 +26,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sections_ = loadSectionHeaders(this);
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
+    exportDirectory_ = loadExportDirectory(this);
   }
 
   public PortableExecutableFileChannel(String filePath)
@@ -39,6 +40,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sections_ = loadSectionHeaders(this);
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
+    exportDirectory_ = loadExportDirectory(this);
   }
 
   public PortableExecutableFileChannel(File file)
@@ -52,6 +54,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sections_ = loadSectionHeaders(this);
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
+    exportDirectory_ = loadExportDirectory(this);
   }
 
   public PortableExecutableFileChannel(byte[] data)
@@ -65,6 +68,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sections_ = loadSectionHeaders(this);
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
+    exportDirectory_ = loadExportDirectory(this);
   }
 
   public long getStartPosition()
@@ -105,6 +109,23 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   public SectionHeader getSection(String name)
   {
     return getSectionTable().get(name);
+  }
+
+  public DataDirectory[] getDataDirectories()
+  {
+    return dataDirectories_;
+  }
+
+  public boolean hasDataDirectory(DataDirectoryIndex dirIndex)
+  {
+    int idx = dirIndex.ordinal();
+    if (idx >= dataDirectories_.length)
+    {
+      return false;
+    }
+
+    return (dataDirectories_[idx] != null &&
+      dataDirectories_[idx].getSize() > 0);
   }
 
   private void validateAll()
@@ -155,5 +176,17 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     }
 
     return dataDirectories;
+  }
+
+  private static ExportDirectory loadExportDirectory(
+    PortableExecutableFileChannel peFile)
+    throws BadExecutableFormatException, EndOfStreamException, IOException
+  {
+    if (!peFile.hasDataDirectory(DataDirectoryIndex.EXPORT_TABLE))
+    {
+      return null;
+    }
+
+    return new ExportDirectory(peFile);
   }
 }

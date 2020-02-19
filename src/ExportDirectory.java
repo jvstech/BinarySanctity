@@ -2,12 +2,37 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
 
-public class ExportDirectory
+public class ExportDirectory implements Header
 {
-  private int exportFlags_;
+  public static final int HEADER_SIZE = 44;
+
+  enum Offsets
+  {
+    EXPORT_FLAGS              (0x00),
+    TIME_DATE_STAMP_VALUE     (0x04),
+    MAJOR_VERSION             (0x08),
+    MINOR_VERSION             (0x0A),
+    NAME_RVA                  (0x0C),
+    ORDINAL_BASE              (0x10),
+    NUMBER_OF_ADDRESS_ENTRIES (0x14),
+    NUMBER_OF_NAME_POINTERS   (0x18),
+    EXPORT_ADDRESS_TABLE_RVA  (0x1C),
+    NAME_POINTER_RVA          (0x20),
+    ORDINAL_TABLE_RVA         (0x24)
+    ;
+
+    public final int position;
+
+    private Offsets(int offset)
+    {
+      position = offset;
+    }
+  }
+
+  private final PortableExecutableFileChannel peFile_;
+  private final RelativeVirtualAddress rva_;
+
   private int timeDateStampValue_;
-  private short majorVersion_;
-  private short minorVersion_;
   private RelativeVirtualAddress nameRVA_;
   private int ordinalBase_;
   private int numberOfAddressEntries_;
@@ -20,67 +45,144 @@ public class ExportDirectory
   private String[] nameTable_;
   private Ordinal[] ordinalTable_;
 
-  public int getExportFlags()
+  public ExportDirectory(PortableExecutableFileChannel peFile)
+    throws IOException, EndOfStreamException
   {
-    return exportFlags_;
+    if (!peFile.hasDataDirectory(DataDirectoryIndex.EXPORT_TABLE))
+    {
+      throw new IllegalArgumentException();
+    }
+
+    peFile_ = peFile;
+    rva_ = peFile_
+      .getDataDirectories()[DataDirectoryIndex.EXPORT_TABLE.ordinal()]
+      .getRVA();
+    nameRVA_ = new RelativeVirtualAddress(
+      peFile_.readInt32(relpos(Offsets.NAME_RVA.position)),
+      peFile_.getSections());
+    name_ = peFile_.readCString(nameRVA_.getFilePosition());
+    exportAddressTableRVA_ = new RelativeVirtualAddress(
+      peFile_.readInt32(relpos(Offsets.EXPORT_ADDRESS_TABLE_RVA.position)),
+      peFile_.getSections());
+    namePointerRVA_ = new RelativeVirtualAddress(
+      peFile_.readInt32(relpos(Offsets.NAME_POINTER_RVA.position)),
+      peFile_.getSections());
+    ordinalTableRVA_ = new RelativeVirtualAddress(
+      peFile_.readInt32(relpos(Offsets.ORDINAL_TABLE_RVA.position)),
+      peFile_.getSections());
+    int numberOfNamePointers = getNumberOfNamePointers();
+    namePointerTable_ = new RelativeVirtualAddress[numberOfNamePointers];
+    nameTable_ = new String[numberOfNamePointers];
+    ordinalTable_ = new Ordinal[numberOfNamePointers];
+    for (int i = 0; i < numberOfNamePointers; i++)
+    {
+      namePointerTable_[i] = new RelativeVirtualAddress(
+        peFile_.readInt32(namePointerRVA_.getFilePosition()),
+          peFile_.getSections());
+      nameTable_[i] =
+        peFile_.readCString(namePointerTable_[i].getFilePosition());
+      ordinalTable_[i] = new Ordinal(peFile_.readUInt16(
+        ordinalTableRVA_.getFilePosition() + (i * 2)),
+        getOrdinalBase());
+    }
+  }
+
+  @Override
+  public int getHeaderSize()
+    throws IOException, EndOfStreamException
+  {
+    return HEADER_SIZE;
+  }
+
+  @Override
+  public long getStartOffset()
+    throws IOException, EndOfStreamException
+  {
+    return rva_.getFilePosition();
+  }
+
+  @Override
+  public long getEndOffset()
+    throws IOException, EndOfStreamException
+  {
+    return getStartOffset() + getHeaderSize();
+  }
+
+  public int getExportFlags()
+    throws IOException, EndOfStreamException
+  {
+    return peFile_.readInt32(relpos(Offsets.EXPORT_FLAGS.position));
   }
 
   public int getTimeDateStampValue()
+    throws IOException, EndOfStreamException
   {
-    return timeDateStampValue_;
+    return peFile_.readInt32(relpos(Offsets.TIME_DATE_STAMP_VALUE.position));
   }
 
   public short getMajorVersion()
+    throws IOException, EndOfStreamException
   {
-    return majorVersion_;
+    return peFile_.readInt16(relpos(Offsets.MAJOR_VERSION.position));
   }
 
   public short getMinorVersion()
+    throws IOException, EndOfStreamException
   {
-    return minorVersion_;
+    return peFile_.readInt16(relpos(Offsets.MINOR_VERSION.position));
   }
 
   public RelativeVirtualAddress getNameRVA()
+    throws IOException, EndOfStreamException
   {
     return nameRVA_;
   }
 
   public int getOrdinalBase()
+    throws IOException, EndOfStreamException
   {
-    return ordinalBase_;
+    return peFile_.readInt32(relpos(Offsets.ORDINAL_BASE.position));
   }
 
   public int getNumberOfAddressEntries()
+    throws IOException, EndOfStreamException
   {
-    return numberOfAddressEntries_;
+    return
+      peFile_.readInt32(relpos(Offsets.NUMBER_OF_ADDRESS_ENTRIES.position));
   }
 
   public int getNumberOfNamePointers()
+    throws IOException, EndOfStreamException
   {
-    return numberOfNamePointers_;
+    return peFile_.readInt32(relpos(Offsets.NUMBER_OF_NAME_POINTERS.position));
   }
 
   public RelativeVirtualAddress getExportAddressTableRVA()
+    throws IOException, EndOfStreamException
   {
     return exportAddressTableRVA_;
   }
 
   public RelativeVirtualAddress getNamePointerRVA()
+    throws IOException, EndOfStreamException
   {
     return namePointerRVA_;
   }
 
   public RelativeVirtualAddress getOrdinalTableRVA()
+    throws IOException, EndOfStreamException
   {
     return ordinalTableRVA_;
   }
 
   public String getName()
+    throws IOException, EndOfStreamException
   {
     return name_;
   }
 
   public RelativeVirtualAddress[] getNamePointerTable()
+    throws IOException, EndOfStreamException
   {
     return namePointerTable_;
   }
@@ -96,8 +198,9 @@ public class ExportDirectory
   }
 
   public Date getTimeDateStamp()
+    throws IOException, EndOfStreamException
   {
-    return Date.from(Instant.ofEpochSecond(timeDateStampValue_));
+    return Date.from(Instant.ofEpochSecond(getTimeDateStampValue()));
   }
 
   @Override
@@ -106,79 +209,8 @@ public class ExportDirectory
     return name_;
   }
 
-  public static ExportDirectory fromStream(ByteIOStream stream,
-    Iterable<SectionHeader> sections)
-    throws BadExecutableFormatException, IOException
+  private long relpos(long pos)
   {
-    if (stream == null)
-    {
-      throw new IllegalArgumentException("Stream is null.");
-    }
-
-    if (sections == null)
-    {
-      throw new IllegalArgumentException("Sections list is null.");
-    }
-
-    int rewindPos = -1;
-    try
-    {
-      ExportDirectory edir = new ExportDirectory();
-      edir.exportFlags_ = stream.readInt32();
-      edir.timeDateStampValue_ = stream.readInt32();
-      edir.majorVersion_ = stream.readInt16();
-      edir.minorVersion_ = stream.readInt16();
-      edir.nameRVA_ = new RelativeVirtualAddress(stream.readInt32(), sections);
-      edir.ordinalBase_ = stream.readInt32();
-      edir.numberOfAddressEntries_ = stream.readInt32();
-      edir.numberOfNamePointers_ = stream.readInt32();
-      edir.exportAddressTableRVA_ =
-        new RelativeVirtualAddress(stream.readInt32(), sections);
-      edir.namePointerRVA_ =
-        new RelativeVirtualAddress(stream.readInt32(), sections);
-      edir.ordinalTableRVA_ =
-        new RelativeVirtualAddress(stream.readInt32(), sections);
-
-      rewindPos = stream.getPosition();
-      edir.name_ = stream.readCString();
-      stream.setPosition((int)(edir.namePointerRVA_.getFilePosition()));
-      edir.namePointerTable_ =
-        new RelativeVirtualAddress[edir.numberOfNamePointers_];
-      edir.nameTable_ = new String[edir.numberOfNamePointers_];
-      edir.ordinalTable_ = new Ordinal[edir.numberOfNamePointers_];
-      for (int i = 0; i < edir.numberOfNamePointers_; i++)
-      {
-        edir.namePointerTable_[i] =
-          new RelativeVirtualAddress(stream.readInt32(), sections);
-        int nextNamePos = stream.getPosition();
-        edir.nameTable_[i] = stream.readCString();
-        stream.setPosition(
-          (int)(edir.ordinalTableRVA_.getFilePosition() + (i * 2)));
-        edir.ordinalTable_[i] =
-          new Ordinal(stream.readUInt16(), edir.ordinalBase_);
-        stream.setPosition(nextNamePos);
-      }
-
-      return edir;
-    }
-    catch (EndOfStreamException eofEx)
-    {
-      throw new BadExecutableFormatException(
-        "Invalid export directory table data.");
-    }
-    finally
-    {
-      if (rewindPos > 0)
-      {
-        stream.setPosition(rewindPos);
-      }
-    }
-  }
-
-  public static ExportDirectory fromStream(ByteIOStream stream,
-    SectionHeader[] sections)
-    throws BadExecutableFormatException, IOException
-  {
-    return fromStream(stream, java.util.Arrays.asList(sections));
+    return rva_.getFilePosition() + pos;
   }
 }
