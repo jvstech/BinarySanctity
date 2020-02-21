@@ -89,21 +89,18 @@ public class ExportDirectory implements Header
 
   @Override
   public int getHeaderSize()
-    throws IOException, EndOfStreamException
   {
     return HEADER_SIZE;
   }
 
   @Override
   public long getStartOffset()
-    throws IOException, EndOfStreamException
   {
     return rva_.getFilePosition();
   }
 
   @Override
   public long getEndOffset()
-    throws IOException, EndOfStreamException
   {
     return getStartOffset() + getHeaderSize();
   }
@@ -133,7 +130,6 @@ public class ExportDirectory implements Header
   }
 
   public RelativeVirtualAddress getNameRVA()
-    throws IOException, EndOfStreamException
   {
     return nameRVA_;
   }
@@ -158,31 +154,26 @@ public class ExportDirectory implements Header
   }
 
   public RelativeVirtualAddress getExportAddressTableRVA()
-    throws IOException, EndOfStreamException
   {
     return exportAddressTableRVA_;
   }
 
   public RelativeVirtualAddress getNamePointerRVA()
-    throws IOException, EndOfStreamException
   {
     return namePointerRVA_;
   }
 
   public RelativeVirtualAddress getOrdinalTableRVA()
-    throws IOException, EndOfStreamException
   {
     return ordinalTableRVA_;
   }
 
   public String getName()
-    throws IOException, EndOfStreamException
   {
     return name_;
   }
 
   public RelativeVirtualAddress[] getNamePointerTable()
-    throws IOException, EndOfStreamException
   {
     return namePointerTable_;
   }
@@ -211,6 +202,6 @@ public class ExportDirectory implements Header
 
   private long relpos(long pos)
   {
-    return rva_.getFilePosition() + pos;
+    return getStartOffset() + pos;
   }
 }

@@ -1,8 +1,31 @@
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ImportDirectory
+public class ImportDirectory implements Header
 {
+  public static final int HEADER_SIZE = 20;
+
+  enum Offsets
+  {
+    IMPORT_LOOKUP_TABLE_RVA   (0x00),
+    TIME_DATE_STAMP           (0x04),
+    FORWARDER_CHAIN           (0x08),
+    NAME_RVA                  (0x0C),
+    IMPORT_ADDRESS_TABLE_RVA  (0x10)
+    ;
+
+    public final int position;
+
+    private Offsets(int offset)
+    {
+      position = offset;
+    }
+  }
+
+  private final PortableExecutableFileChannel peFile_;
+  private final RelativeVirtualAddress rva_;
+  private final int row_;
+
   private RelativeVirtualAddress importLookupTableRVA_;
   private int timeDateStamp_;
   private int forwarderChain_;
@@ -10,6 +33,48 @@ public class ImportDirectory
   private RelativeVirtualAddress importAddressTableRVA_;
   private String name_;
   private ImportLookup[] importLookupTable_;
+
+  public ImportDirectory(PortableExecutableFileChannel peFile, int row)
+    throws IOException, EndOfStreamException
+  {
+    if (!peFile.hasDataDirectory(DataDirectoryIndex.IMPORT_TABLE))
+    {
+      // FYI, this should *never* happen... EVERYTHING links against kernel32.
+      throw new IllegalArgumentException();
+    }
+
+    peFile_ = peFile;
+    row_ = row;
+    rva_ = peFile_
+      .getDataDirectories()[DataDirectoryIndex.IMPORT_TABLE.ordinal()]
+      .getRVA();
+    importLookupTableRVA_ =
+      new RelativeVirtualAddress(peFile_.readInt32(relpos(
+        Offsets.IMPORT_ADDRESS_TABLE_RVA.position)), peFile_.getSections());
+    nameRVA_ =
+      new RelativeVirtualAddress(peFile_.readInt32(relpos(
+        Offsets.NAME_RVA.position)), peFile_.getSections());
+    importAddressTableRVA_ =
+      new RelativeVirtualAddress(peFile_.readInt32(relpos(
+        Offsets.IMPORT_ADDRESS_TABLE_RVA.position)), peFile_.getSections());
+    if (isValid())
+    {
+      name_ = peFile_.readCString(nameRVA_.getFilePosition());
+      ArrayList<ImportLookup> ilt = new ArrayList<>();
+      for (int i = 0; /* no condition */; i++)
+      {
+        ImportLookup il = new ImportLookup(peFile_, this, i);
+        if (il.getBits() == 0)
+        {
+          break;
+        }
+
+        ilt.add(il);
+      }
+
+      importLookupTable_ = ilt.toArray(new ImportLookup[0]);
+    }
+  }
 
   public RelativeVirtualAddress getImportLookupTableRVA()
   {
@@ -58,65 +123,37 @@ public class ImportDirectory
     return importLookupTable_;
   }
 
+  public boolean isValid()
+  {
+    return (importLookupTableRVA_.getValue() > 0);
+  }
+
+  @Override
+  public int getHeaderSize()
+  {
+    return HEADER_SIZE;
+  }
+
+  @Override
+  public long getStartOffset()
+  {
+    return rva_.getFilePosition() + (getHeaderSize() * row_);
+  }
+
+  @Override
+  public long getEndOffset()
+  {
+    return getStartOffset() + getHeaderSize();
+  }
+
   @Override
   public String toString()
   {
     return name_;
   }
 
-  public static ImportDirectory[] fromStream(ByteIOStream stream,
-    OptionalHeader optionalHeader, Iterable<SectionHeader> sections)
-    throws BadExecutableFormatException, IOException
+  private long relpos(long pos)
   {
-    if (sections == null)
-    {
-      throw new IllegalArgumentException("Section list is null.");
-    }
-
-    ArrayList<ImportDirectory> importDirectoryTable = new ArrayList<>();
-    for (;;)
-    {
-      try
-      {
-        ImportDirectory idt = new ImportDirectory();
-        idt.importLookupTableRVA_ =
-          new RelativeVirtualAddress(stream.readInt32(), sections);
-        idt.timeDateStamp_ = stream.readInt32();
-        idt.forwarderChain_ = stream.readInt32();
-        idt.nameRVA_ =
-          new RelativeVirtualAddress(stream.readInt32(), sections);
-        idt.importAddressTableRVA_ =
-          new RelativeVirtualAddress(stream.readInt32(), sections);
-        if (idt.importLookupTableRVA_.getValue() == 0)
-        {
-          // indicates the end of the import directory table
-          break;
-        }
-
-        int rewindPos = stream.getPosition();
-        idt.name_ = stream.readCString();
-        stream.setPosition((int)(idt.importLookupTableRVA_.getFilePosition()));
-        idt.importLookupTable_ =
-          ImportLookup.fromStream(stream, optionalHeader, sections);
-        stream.setPosition(rewindPos);
-
-        importDirectoryTable.add(idt);
-      }
-      catch (EndOfStreamException eofEx)
-      {
-        throw
-          new BadExecutableFormatException("Invalid import directory table.");
-      }
-    }
-
-    return importDirectoryTable.toArray(new ImportDirectory[0]);
-  }
-
-  public static ImportDirectory[] fromStream(ByteIOStream stream,
-    OptionalHeader optionalHeader, SectionHeader[] sections)
-    throws BadExecutableFormatException, IOException
-  {
-    return fromStream(stream, optionalHeader,
-      java.util.Arrays.asList(sections));
+    return getStartOffset() + pos;
   }
 }

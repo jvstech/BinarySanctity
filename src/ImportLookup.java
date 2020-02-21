@@ -1,120 +1,130 @@
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
 
-public class ImportLookup
+public class ImportLookup implements Header
 {
-  private long bits_;
-  private boolean importByOrdinal_;
-  private short ordinalNumber_;
+  private final PortableExecutableFileChannel peFile_;
+  private final ImportDirectory importDirectory_;
+  private final ImageStateType imageStateType_;
+
   private RelativeVirtualAddress hintNameRVA_;
   private HintName hintName_;
   private int index_;
 
-  /* default access */ ImportLookup(int index)
+  public ImportLookup(PortableExecutableFileChannel peFile,
+    ImportDirectory importDirectory, int index)
+    throws IOException, EndOfStreamException
   {
-    index_ = index;
+    if (peFile == null || importDirectory == null)
+    {
+      throw new NullPointerException();
+    }
+
+    if (index < 0 || !importDirectory.isValid())
+    {
+      throw new IllegalArgumentException();
+    }
+
+    peFile_ = peFile;
+    importDirectory_ = importDirectory;
+    imageStateType_ = peFile_.getOptionalHeader().getImageState();
+    if (getBits() == 0)
+    {
+      index_ = -1;
+      hintNameRVA_ = null;
+      hintName_ = null;
+    }
+    else
+    {
+      index_ = index;
+
+      if (isImportByOrdinal())
+      {
+        hintNameRVA_ = null;
+        hintName_ = null;
+      } else
+      {
+        hintNameRVA_ =
+          new RelativeVirtualAddress((int) (getBits() & ((1 << 30) - 1)),
+            peFile_.getSections());
+        hintName_ = new HintName(peFile_, hintNameRVA_);
+      }
+    }
+  }
+
+  public long getBits()
+    throws IOException, EndOfStreamException
+  {
+    if (imageStateType_ == ImageStateType.PE64)
+    {
+      return peFile_.readInt64(getStartOffset());
+    }
+
+    return peFile_.readUInt32(getStartOffset());
+  }
+
+  public boolean isImportByOrdinal()
+    throws IOException, EndOfStreamException
+  {
+    if (imageStateType_ == ImageStateType.PE64)
+    {
+      return ((getBits() >>> 63) != 0);
+    }
+
+    return ((getBits() >>> 31) != 0);
+  }
+
+  public short getOrdinalNumber()
+    throws IOException, EndOfStreamException
+  {
+    return (short)(getBits() & ((1 << 15) - 1));
   }
 
   @Override
   public String toString()
   {
-    if (importByOrdinal_)
+    try
     {
-      return String.format("<ordinal:%d>", ordinalNumber_);
+      if (isImportByOrdinal())
+      {
+        return String.format("<ordinal:%d>", getOrdinalNumber());
+      }
+    }
+    catch (IOException e)
+    {
+      return null;
+    }
+    catch (EndOfStreamException e)
+    {
+      return null;
     }
 
     return hintName_.toString();
   }
 
-  public static ImportLookup[] fromStream(ByteIOStream stream,
-    OptionalHeader optionalHeader, Iterable<SectionHeader> sections)
-    throws BadExecutableFormatException, IOException, EndOfStreamException
+  @Override
+  public int getHeaderSize()
+    throws IOException, EndOfStreamException
   {
-    if (stream == null)
+    if (peFile_.getOptionalHeader().getImageState() == ImageStateType.PE64)
     {
-      throw new IllegalArgumentException("Stream is null.");
+      return 8;
     }
 
-    if (optionalHeader == null)
-    {
-      throw new IllegalArgumentException("Optional header is null.");
-    }
-
-    if (sections == null)
-    {
-      throw new IllegalArgumentException("Sections list is null.");
-    }
-
-    byte[] buffer;
-    if (optionalHeader.getImageState() == ImageStateType.PE64)
-    {
-      buffer = new byte[8];
-    }
-    else
-    {
-      buffer = new byte[4];
-    }
-
-    ArrayList<ImportLookup> importLookups = new ArrayList<>();
-    for (int i = 0; /* no condition */ ; i++)
-    {
-      int bytesRead = stream.read(buffer, 0, buffer.length);
-      if (bytesRead < buffer.length)
-      {
-        throw new BadExecutableFormatException("Invalid import lookup entry.");
-      }
-
-      ImportLookup il = new ImportLookup(i);
-      long bits;
-      if (optionalHeader.getImageState() == ImageStateType.PE64)
-      {
-        bits = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).getLong();
-        if (bits == 0)
-        {
-          break;
-        }
-
-        il.bits_ = bits;
-        il.importByOrdinal_ = ((bits >>> 63) != 0);
-      }
-      else
-      {
-        bits = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).getInt();
-        if (bits == 0)
-        {
-          break;
-        }
-
-        il.bits_ = bits;
-        il.importByOrdinal_ = ((bits >>> 31) != 0);
-      }
-
-      if (il.importByOrdinal_)
-      {
-        il.ordinalNumber_ = (short)(bits & ((1 << 15) - 1));
-      }
-      else
-      {
-        il.hintNameRVA_ =
-          new RelativeVirtualAddress((int)(bits & ((1 << 30) - 1)), sections);
-        int rewindPos = stream.getPosition();
-        il.hintName_ = HintName.fromStream(stream);
-        stream.setPosition(rewindPos);
-      }
-
-      importLookups.add(il);
-    }
-
-    return importLookups.toArray(new ImportLookup[0]);
+    return 4;
   }
 
-  public static ImportLookup[] fromStream(ByteIOStream stream,
-    OptionalHeader optionalHeader, SectionHeader[] sections)
-    throws BadExecutableFormatException, IOException, EndOfStreamException
+  @Override
+  public long getStartOffset()
+    throws IOException, EndOfStreamException
   {
-    return fromStream(stream, optionalHeader,
-      java.util.Arrays.asList(sections));
+    return importDirectory_.getImportLookupTableRVA().getFilePosition() +
+      (getHeaderSize() * index_);
+  }
+
+  @Override
+  public long getEndOffset()
+    throws IOException, EndOfStreamException
+  {
+    return getStartOffset() + getHeaderSize();
   }
 }

@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
@@ -13,7 +14,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   private final HashMap<String, SectionHeader> sectionTable_;
   private final DataDirectory[] dataDirectories_;
   private final ExportDirectory exportDirectory_;
-  //private final ImportDirectory[] importDirectories_;
+  private final ImportDirectory[] importDirectories_;
 
   public PortableExecutableFileChannel(FileInputStream fileInputStream)
     throws IOException, EndOfStreamException, BadExecutableFormatException
@@ -27,6 +28,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
     exportDirectory_ = loadExportDirectory(this);
+    importDirectories_ = loadImportDirectories(this);
   }
 
   public PortableExecutableFileChannel(String filePath)
@@ -41,6 +43,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
     exportDirectory_ = loadExportDirectory(this);
+    importDirectories_ = loadImportDirectories(this);
   }
 
   public PortableExecutableFileChannel(File file)
@@ -55,6 +58,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
     exportDirectory_ = loadExportDirectory(this);
+    importDirectories_ = loadImportDirectories(this);
   }
 
   public PortableExecutableFileChannel(byte[] data)
@@ -69,6 +73,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
     exportDirectory_ = loadExportDirectory(this);
+    importDirectories_ = loadImportDirectories(this);
   }
 
   public long getStartPosition()
@@ -126,6 +131,16 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
 
     return (dataDirectories_[idx] != null &&
       dataDirectories_[idx].getSize() > 0);
+  }
+
+  public ExportDirectory getExportDirectory()
+  {
+    return exportDirectory_;
+  }
+
+  public ImportDirectory[] getImportDirectories()
+  {
+    return importDirectories_;
   }
 
   private void validateAll()
@@ -188,5 +203,38 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     }
 
     return new ExportDirectory(peFile);
+  }
+
+  private static ImportDirectory[] loadImportDirectories(
+    PortableExecutableFileChannel peFile)
+    throws BadExecutableFormatException, IOException
+  {
+    if (!peFile.hasDataDirectory(DataDirectoryIndex.IMPORT_TABLE))
+    {
+      return null;
+    }
+
+    ArrayList<ImportDirectory> importDirectoryTable = new ArrayList<>();
+    int i = 0;
+    for (;; i++)
+    {
+      try
+      {
+        ImportDirectory idt = new ImportDirectory(peFile, i);
+        if (!idt.isValid())
+        {
+          break;
+        }
+
+        importDirectoryTable.add(idt);
+      }
+      catch (EndOfStreamException eofEx)
+      {
+        throw
+          new BadExecutableFormatException("Invalid import directory table.");
+      }
+    }
+
+    return importDirectoryTable.toArray(new ImportDirectory[0]);
   }
 }

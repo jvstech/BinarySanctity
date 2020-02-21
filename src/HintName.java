@@ -1,7 +1,46 @@
-public class HintName
+import java.io.IOException;
+
+public class HintName implements Header
 {
-  private int hint_;
-  private String name_;
+  private final PortableExecutableFileChannel peFile_;
+  private final RelativeVirtualAddress rva_;
+  private final int hint_;
+  private final String name_;
+  private final int headerSize_;
+
+  public HintName(PortableExecutableFileChannel peFile,
+    RelativeVirtualAddress rva)
+    throws IOException, EndOfStreamException
+  {
+    if (peFile == null || rva == null)
+    {
+      throw new NullPointerException();
+    }
+
+    if (rva.getValue() == 0)
+    {
+      throw new IllegalArgumentException();
+    }
+
+    peFile_ = peFile;
+    rva_ = rva;
+    hint_ = peFile_.readUInt16(rva_.getFilePosition());
+    name_ = peFile_.readCString(rva_.getFilePosition() + 2);
+    // If the name length is even, including the trailing null byte would have
+    // this entry end on an odd boundary. In this case, an extra null pad byte
+    // is added. Therefore, if the name length is even, we must add two bytes to
+    // the length to indicate where the next HintName begins. If the name length
+    // is odd, the trailing null byte ends on a HintName boundary, so we only
+    // need to add a single byte to compensate for the trailing null.
+    if (name_.length() % 2 == 0)
+    {
+      headerSize_ = 2 + name_.length() + 2;
+    }
+    else
+    {
+      headerSize_ = 2 + name_.length() + 1;
+    }
+  }
 
   public int getHint()
   {
@@ -14,34 +53,26 @@ public class HintName
   }
 
   @Override
+  public int getHeaderSize()
+  {
+    return headerSize_;
+  }
+
+  @Override
+  public long getStartOffset()
+  {
+    return rva_.getFilePosition();
+  }
+
+  @Override
+  public long getEndOffset()
+  {
+    return getStartOffset() + getHeaderSize();
+  }
+
+  @Override
   public String toString()
   {
     return name_;
-  }
-
-  public static HintName fromStream(ByteIOStream stream)
-    throws BadExecutableFormatException
-  {
-    if (stream == null)
-    {
-      throw new IllegalArgumentException("Stream is null.");
-    }
-
-    HintName hintName = new HintName();
-    try
-    {
-      hintName.hint_ = stream.readUInt16();
-      hintName.name_ = stream.readCString();
-      if ((hintName.name_.length() % 2) == 0)
-      {
-        stream.read(1);
-      }
-    }
-    catch (EndOfStreamException eofEx)
-    {
-      throw new BadExecutableFormatException("Invalid hint/name data.");
-    }
-
-    return hintName;
   }
 }
