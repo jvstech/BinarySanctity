@@ -92,6 +92,24 @@ class PEFileReadTest
     assertEquals(16, optHeader.getNumberOfRvaAndSizes());
   }
 
+  @Test
+  void dataDirectories()
+    throws Exception
+  {
+    byte[] decodedData = getDecodedData();
+    PortableExecutableFileChannel peFile =
+      new PortableExecutableFileChannel(decodedData);
+    DataDirectory[] directories = peFile.getDataDirectories();
+    assertEquals(16, directories.length);
+    assertEquals(0x16578, directories[1].getVirtualAddress());
+    assertEquals(40, directories[1].getSize());
+    for (int i : new int[]{0, 2, 4, 7, 8, 9, 11, 13, 14, 15})
+    {
+      assertEquals(0, directories[i].getVirtualAddress());
+      assertEquals(0, directories[i].getSize());
+    }
+  }
+
   private static byte[] getDecodedData()
     throws IOException, URISyntaxException
   {

@@ -64,7 +64,7 @@ public class ImportDirectory implements Header
       for (int i = 0; /* no condition */; i++)
       {
         ImportLookup il = new ImportLookup(peFile_, this, i);
-        if (il.getBits() == 0)
+        if (!il.isValid())
         {
           break;
         }

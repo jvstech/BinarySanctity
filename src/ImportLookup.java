@@ -27,6 +27,7 @@ public class ImportLookup implements Header
     peFile_ = peFile;
     importDirectory_ = importDirectory;
     imageStateType_ = peFile_.getOptionalHeader().getImageState();
+    index_ = index;
     if (getBits() == 0)
     {
       index_ = -1;
@@ -35,16 +36,15 @@ public class ImportLookup implements Header
     }
     else
     {
-      index_ = index;
-
       if (isImportByOrdinal())
       {
         hintNameRVA_ = null;
         hintName_ = null;
-      } else
+      }
+      else
       {
         hintNameRVA_ =
-          new RelativeVirtualAddress((int) (getBits() & ((1 << 30) - 1)),
+          new RelativeVirtualAddress((int)(getBits() & ((1 << 30) - 1)),
             peFile_.getSections());
         hintName_ = new HintName(peFile_, hintNameRVA_);
       }
@@ -77,6 +77,17 @@ public class ImportLookup implements Header
     throws IOException, EndOfStreamException
   {
     return (short)(getBits() & ((1 << 15) - 1));
+  }
+
+  public int getIndex()
+  {
+    return index_;
+  }
+
+  public boolean isValid()
+  {
+    return (index_ >= 0 && hintNameRVA_ != null &&
+      hintNameRVA_.getValue() != 0);
   }
 
   @Override
