@@ -302,6 +302,28 @@ public class ReadOnlyBinaryFileChannel extends FileChannel
       ((result[0] & 0xffL)));
   }
 
+  public String readCString(long position, int maxLength)
+    throws IOException
+  {
+    StringBuilder sb = new StringBuilder();
+    try
+    {
+      int charVal = readUInt8(position);
+      while (charVal > 0 && position < size() && maxLength > 0)
+      {
+        sb.append((char)charVal);
+        ++position;
+        --maxLength;
+        charVal = readUInt8(position);
+      }
+    }
+    catch (EndOfStreamException eofEx)
+    {
+    }
+
+    return sb.toString();
+  }
+
   public String readCString(long position)
     throws IOException
   {

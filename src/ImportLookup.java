@@ -79,6 +79,16 @@ public class ImportLookup implements Header
     return (short)(getBits() & ((1 << 15) - 1));
   }
 
+  public int getHint()
+  {
+    return hintName_.getHint();
+  }
+
+  public String getName()
+  {
+    return hintName_.getName();
+  }
+
   public int getIndex()
   {
     return index_;

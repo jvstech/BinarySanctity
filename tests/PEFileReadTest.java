@@ -1,3 +1,4 @@
+import com.sun.xml.internal.ws.wsdl.writer.document.Import;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -107,6 +108,115 @@ class PEFileReadTest
     {
       assertEquals(0, directories[i].getVirtualAddress());
       assertEquals(0, directories[i].getSize());
+    }
+  }
+
+  @Test
+  void sectionHeaders()
+    throws Exception
+  {
+    byte[] decodedData = getDecodedData();
+    PortableExecutableFileChannel peFile =
+      new PortableExecutableFileChannel(decodedData);
+    assertEquals(6, peFile.getPEHeader().getNumberOfSections());
+    assertEquals(".text", peFile.getSection(0).getName());
+    assertEquals(0x1000, peFile.getSection(0).getVirtualAddress());
+    assertEquals(0xC600, peFile.getSection(0).getSizeOfRawData());
+    assertEquals(0x400, peFile.getSection(0).getPointerToRawData());
+    assertEquals(0, peFile.getSection(0).getPointerToRelocations());
+    assertEquals(".rdata", peFile.getSection(1).getName());
+    assertEquals(".data", peFile.getSection(2).getName());
+    assertEquals(".pdata", peFile.getSection(3).getName());
+    assertEquals("_RDATA", peFile.getSection(4).getName());
+    assertEquals(".reloc", peFile.getSection(5).getName());
+  }
+
+  @Test
+  void importNames()
+    throws Exception
+  {
+    byte[] decodedData = getDecodedData();
+    PortableExecutableFileChannel peFile =
+      new PortableExecutableFileChannel(decodedData);
+    String[] importedFuncNames = new String[]
+      {
+        "QueryPerformanceCounter",
+        "GetCurrentProcessId",
+        "GetCurrentThreadId",
+        "GetSystemTimeAsFileTime",
+        "InitializeSListHead",
+        "RtlCaptureContext",
+        "RtlLookupFunctionEntry",
+        "RtlVirtualUnwind",
+        "IsDebuggerPresent",
+        "UnhandledExceptionFilter",
+        "SetUnhandledExceptionFilter",
+        "GetStartupInfoW",
+        "IsProcessorFeaturePresent",
+        "GetModuleHandleW",
+        "WriteConsoleW",
+        "RtlUnwindEx",
+        "GetLastError",
+        "SetLastError",
+        "EnterCriticalSection",
+        "LeaveCriticalSection",
+        "DeleteCriticalSection",
+        "InitializeCriticalSectionAndSpinCount",
+        "TlsAlloc",
+        "TlsGetValue",
+        "TlsSetValue",
+        "TlsFree",
+        "FreeLibrary",
+        "GetProcAddress",
+        "LoadLibraryExW",
+        "RaiseException",
+        "GetStdHandle",
+        "WriteFile",
+        "GetModuleFileNameW",
+        "GetCurrentProcess",
+        "ExitProcess",
+        "TerminateProcess",
+        "GetModuleHandleExW",
+        "GetCommandLineA",
+        "GetCommandLineW",
+        "GetFileType",
+        "HeapAlloc",
+        "HeapFree",
+        "FindClose",
+        "FindFirstFileExW",
+        "FindNextFileW",
+        "IsValidCodePage",
+        "GetACP",
+        "GetOEMCP",
+        "GetCPInfo",
+        "MultiByteToWideChar",
+        "WideCharToMultiByte",
+        "GetEnvironmentStringsW",
+        "FreeEnvironmentStringsW",
+        "SetEnvironmentVariableW",
+        "SetStdHandle",
+        "GetStringTypeW",
+        "CompareStringW",
+        "LCMapStringW",
+        "GetProcessHeap",
+        "GetFileSizeEx",
+        "SetFilePointerEx",
+        "GetConsoleCP",
+        "GetConsoleMode",
+        "HeapSize",
+        "HeapReAlloc",
+        "FlushFileBuffers",
+        "CloseHandle",
+        "CreateFileW"
+      };
+    ImportDirectory[] importDirectories = peFile.getImportDirectories();
+    assertEquals(1, importDirectories.length);
+    assertEquals("kernel32.dll", importDirectories[0].getName().toLowerCase());
+    ImportLookup[] lookupTable = importDirectories[0].getImportLookupTable();
+    assertEquals(importedFuncNames.length, lookupTable.length);
+    for (int i = 0; i < importedFuncNames.length; i++)
+    {
+      assertEquals(importedFuncNames[i], lookupTable[i].toString());
     }
   }
 

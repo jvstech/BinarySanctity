@@ -45,9 +45,7 @@ public class SectionHeader implements Header
   {
     peFile_ = peFile;
     index_ = sectionIndex;
-    //byte[] nameBytes = stream.read(8);
-    byte[] nameBytes = peFile_.read(relpos(Offsets.NAME.position), 8);
-    name_ = new String(nameBytes, 0, nameBytes.length);
+    name_ = peFile_.readCString(relpos(Offsets.NAME.position), 8);
     rva_ = new RelativeVirtualAddress(this, index_);
   }
 
