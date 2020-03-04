@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           DllCharacteristicTypes.java
+//! @description    Collection of constant values representing possible two-byte
+//!                 DLL characteristics found in the PE optional header.
+//!
+
 public class DllCharacteristicTypes
 {
   public static final int HIGH_ENTROPY_VIRTUAL_ADDRESS_SPACE = 0x0020;

@@ -1,3 +1,13 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           DataDirectory.java
+//! @description    Represents the size and address of an optional data
+//!                 directory within an executable file. The type of data is
+//!                 specified by the index value.
+//!
+
 import java.io.IOException;
 
 public class DataDirectory implements Header

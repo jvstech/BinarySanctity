@@ -1,3 +1,13 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           ReadOnlyBinaryFileChannel.java
+//! @description    Subclass of FileChannel that represents a file made of
+//!                 binary data which is immutable. Original Javadoc comments
+//!                 are added from the FileChannel class.
+//!
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           SectionCharacteristicTypes.java
+//! @description    Pseudo-enumeration of four-byte values that describe the
+//!                 load characteristics of a portable executable file section.
+//!
+
 public class SectionCharacteristicTypes
 {
   public static final int NO_PAD = 0x00000008;

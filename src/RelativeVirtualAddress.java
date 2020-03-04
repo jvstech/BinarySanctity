@@ -1,3 +1,14 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           RelativeVirtualAddress.java
+//! @description    Represents an address in an executable file as it would
+//!                 exist after the program has been loaded into memory as a
+//!                 process. It also provides a way to map a virtual address
+//!                 to a file offset within the executable file.
+//!
+
 import java.io.IOException;
 
 public class RelativeVirtualAddress

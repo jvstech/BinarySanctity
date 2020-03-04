@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           MachineType.java
+//! @description    Enumeration describing the type of architecture or
+//!                 environment on which the executable file runs.
+//!
+
 import java.util.HashMap;
 
 public enum MachineType

@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           ImageStateType.java
+//! @description    Enumeration type describing the executable image type. This
+//!                 maps directly to the bytes found in the Optional header.
+//!
+
 import java.util.HashMap;
 
 public enum ImageStateType

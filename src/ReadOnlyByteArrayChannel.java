@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           ReadOnlyByteArrayChannel.java
+//! @description    Subclass of FileChannel that represents an in-memory byte
+//!                 buffer which is immutable.
+//!
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;

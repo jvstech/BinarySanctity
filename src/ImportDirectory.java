@@ -1,3 +1,14 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           ImportDirectory.java
+//! @description    Represents the portable executable data directory
+//!                 responsible for listing the imported function and their
+//!                 associated DLLs as used by the program.
+//!
+
+
 import java.io.IOException;
 import java.util.ArrayList;
 

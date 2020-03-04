@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           PortableExecutableFileChannel.java
+//! @description    File or memory buffer that represents a complete portable
+//!                 executable program image.
+//!
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;

@@ -1,3 +1,11 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           Ordinal.java
+//! @description    Represents an import or export table entry index.
+//!
+
 public class Ordinal
 {
   private int unbiasedValue_;

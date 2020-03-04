@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           WindowsSubsystemType.java
+//! @description    Enumeration type describing the overall application style
+//!                 (console, GUI, etc.) as found in the PE Optional header.
+//!
+
 import java.util.HashMap;
 
 public enum WindowsSubsystemType

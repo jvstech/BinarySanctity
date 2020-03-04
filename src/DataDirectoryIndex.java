@@ -1,3 +1,13 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           DataDirectoryIndex.java
+//! @description    Enum describing the types of data directories found within
+//!                 a portable executable file. The ordinal maps directly to the
+//!                 data directory's index.
+//!
+
 public enum DataDirectoryIndex
 {
   EXPORT_TABLE,

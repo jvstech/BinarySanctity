@@ -1,3 +1,14 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           ExportDirectory.java
+//! @description    Represents a table of symbols (names and addresses) made
+//!                 externally available by a PE file. The export directory
+//!                 table contains address information that is used to resolve
+//!                 imports to the entry points within an executable image.
+//!
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;

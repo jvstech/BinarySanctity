@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           PECharacteristicTypes.java
+//! @description    Group of two-byte flag values describing the characteristics
+//!                 of the portable executable file.
+//!
+
 public class PECharacteristicTypes
 {
   public static final int RELOCS_STRIPPED = 0x0001;

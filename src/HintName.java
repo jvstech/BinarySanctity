@@ -1,3 +1,13 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           HintName.java
+//! @description    Represents a hint/name value. A 'hint' is an index into the
+//!                 export name pointer table. A 'name' is an ASCII string that
+//!                 contains the symbol name to import.
+//!
+
 import java.io.IOException;
 
 public class HintName implements Header

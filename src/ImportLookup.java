@@ -1,3 +1,12 @@
+//!
+//! @title          Binary Sanctity
+//! @author         Jonathan Smith
+//! Course Section: CMIS201-HYB2 (Seidel)
+//! @file           ImportLookup.java
+//! @description    Maps an index from an import directory to an imported
+//!                 function name or import hint and virtual address.
+//!
+
 import java.io.IOException;
 
 public class ImportLookup implements Header
