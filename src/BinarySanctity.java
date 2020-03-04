@@ -6,15 +6,18 @@
 //! @description    Entry point for a rudimentary malware scanner.
 //!
 
+import javafx.application.Application;
+import javafx.stage.Stage;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class BinarySanctity
+public class BinarySanctity extends Application
 {
   public static void main(String[] args)
   {
-    Help.about();
+    launch(args);
 
     // #TODO:
     //    ArrayList<String> inputFilePaths = new ArrayList<>();
@@ -25,5 +28,11 @@ public class BinarySanctity
     //      System.out.print("Path to executable file: ");
     //      inputFilePaths.add(scanner.nextLine());
     //    }
+  }
+
+  @Override
+  public void start(Stage primaryStage) throws Exception
+  {
+    Help.about();
   }
 }
