@@ -21,6 +21,7 @@ class PEFileReadTest
     PortableExecutableFileChannel peFile =
       new PortableExecutableFileChannel(getDecodedData());
     DOSHeader dosHeader = peFile.getDOSHeader();
+    System.out.println(dosHeader);
     assertTrue(dosHeader.isValid());
     assertEquals(144, dosHeader.getLastPageSize());
     assertEquals(3, dosHeader.getTotalPageCount());
@@ -101,6 +102,11 @@ class PEFileReadTest
     PortableExecutableFileChannel peFile =
       new PortableExecutableFileChannel(decodedData);
     DataDirectory[] directories = peFile.getDataDirectories();
+    for (DataDirectory directory : peFile.getExistingDataDirectories())
+    {
+      System.out.println(directory);
+    }
+
     assertEquals(16, directories.length);
     assertEquals(0x16578, directories[1].getVirtualAddress());
     assertEquals(40, directories[1].getSize());

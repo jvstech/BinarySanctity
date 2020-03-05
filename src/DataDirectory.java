@@ -87,6 +87,13 @@ public class DataDirectory implements Header
     return getStartOffset() + getHeaderSize();
   }
 
+  @Override
+  public String toString()
+  {
+    return String.format("%s (0x%x, size = %d)",
+      index_, virtualAddress_, size_);
+  }
+
   private long relpos(long pos)
     throws IOException, EndOfStreamException
   {

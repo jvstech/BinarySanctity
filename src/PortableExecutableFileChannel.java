@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
 {
@@ -128,6 +129,20 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   public DataDirectory[] getDataDirectories()
   {
     return dataDirectories_;
+  }
+
+  public DataDirectory[] getExistingDataDirectories()
+  {
+    List<DataDirectory> dirs = new ArrayList<>();
+    for (DataDirectory dir : dataDirectories_)
+    {
+      if (dir.getSize() > 0)
+      {
+        dirs.add(dir);
+      }
+    }
+
+    return dirs.toArray(new DataDirectory[0]);
   }
 
   public boolean hasDataDirectory(DataDirectoryIndex dirIndex)

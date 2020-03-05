@@ -10,6 +10,8 @@
 //!
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -206,12 +208,54 @@ public class DOSHeader implements Header
     return getStartOffset() + getHeaderSize();
   }
 
+  @Override
+  public String toString()
+  {
+    StringWriter sw = new StringWriter();
+    PrintWriter w = new PrintWriter(sw);
+    try
+    {
+      w.printf("Last page size:               %d\n", getLastPageSize());
+      w.printf("Number of pages:              %d\n", getTotalPageCount());
+      w.printf("Number of relocations:        %d\n", getRelocationEntryCount());
+      w.printf("Header paragraph size:        %d\n", getHeaderParagraphSize());
+      w.printf("Minimum number of paragraphs: %d\n",
+        getMinAllocatedParagraphCount());
+      w.printf("Maximum number of paragraphs: %d\n",
+        getMaxAllocatedParagraphCount());
+      w.printf("Initial SS offset:            %d\n", getInitialSSOffset());
+      w.printf("Initial stack pointer:        0x%x\n", getInitialSP());
+      w.printf("Checksum:                     0x%x\n", getChecksum());
+      w.printf("CS/IP offset:                 %d\n", getCSIPOffset());
+      w.printf("Relocation table offset:      %d\n",
+        getRelocationTableOffset());
+      w.printf("Overlay number:               %d (0x%x)\n",
+        getOverlayNumber(), getOverlayNumber());
+      w.printf("OEM ID:                       %d\n", getOEMID());
+      w.printf("OEM ID info:                  %d\n", getOEMIDInfo());
+      w.printf("PE header offset:             %d", getPEHeaderOffset());
+    }
+    catch (IOException e)
+    {
+      w.println("I/O exception while reading the DOS header:");
+      e.printStackTrace(w);
+    }
+    catch (EndOfStreamException e)
+    {
+      w.println(
+        "Reached the end of data before finishing reading the DOS header.");
+      e.printStackTrace(w);
+    }
+
+    return sw.toString();
+  }
+
   void validate()
     throws IOException, BadExecutableFormatException
   {
     if (!isValid())
     {
-      throw new BadExecutableFormatException();
+      throw new BadExecutableFormatException("Invalid or corrupt DOS header");
     }
   }
 }
