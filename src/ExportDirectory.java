@@ -43,11 +43,7 @@ public class ExportDirectory implements Header
   private final PortableExecutableFileChannel peFile_;
   private final RelativeVirtualAddress rva_;
 
-  private int timeDateStampValue_;
   private RelativeVirtualAddress nameRVA_;
-  private int ordinalBase_;
-  private int numberOfAddressEntries_;
-  private int numberOfNamePointers_;
   private RelativeVirtualAddress exportAddressTableRVA_;
   private RelativeVirtualAddress namePointerRVA_;
   private RelativeVirtualAddress ordinalTableRVA_;

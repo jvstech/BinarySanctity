@@ -38,8 +38,6 @@ public class ImportDirectory implements Header
   private final int row_;
 
   private RelativeVirtualAddress importLookupTableRVA_;
-  private int timeDateStamp_;
-  private int forwarderChain_;
   private RelativeVirtualAddress nameRVA_;
   private RelativeVirtualAddress importAddressTableRVA_;
   private String name_;
@@ -48,12 +46,6 @@ public class ImportDirectory implements Header
   public ImportDirectory(PortableExecutableFileChannel peFile, int row)
     throws IOException, EndOfStreamException
   {
-    if (!peFile.hasDataDirectory(DataDirectoryIndex.IMPORT_TABLE))
-    {
-      // FYI, this should *never* happen... EVERYTHING links against kernel32.
-      throw new IllegalArgumentException();
-    }
-
     peFile_ = peFile;
     row_ = row;
     rva_ = peFile_
@@ -95,13 +87,15 @@ public class ImportDirectory implements Header
   // Stamp that is set to zero until the image is bound. After the image is
   // bound, this field is set to the time/data stamp of the DLL.
   public int getTimeDateStamp()
+    throws IOException, EndOfStreamException
   {
-    return timeDateStamp_;
+    return peFile_.readInt32(relpos(Offsets.TIME_DATE_STAMP.position));
   }
 
   public int getForwarderChain()
+    throws IOException, EndOfStreamException
   {
-    return forwarderChain_;
+    return peFile_.readInt32(relpos(Offsets.FORWARDER_CHAIN.position));
   }
 
   public RelativeVirtualAddress getNameRVA()

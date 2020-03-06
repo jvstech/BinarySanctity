@@ -171,6 +171,12 @@ public class SectionHeader implements Header
     return rva_;
   }
 
+  @Override
+  public String toString()
+  {
+    return getName();
+  }
+
   private long relpos(long pos)
     throws IOException, EndOfStreamException
   {

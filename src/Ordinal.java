@@ -26,4 +26,10 @@ public class Ordinal
   {
     return unbiasedValue_;
   }
+
+  @Override
+  public String toString()
+  {
+    return "#" + getBiasedValue();
+  }
 }
