@@ -11,6 +11,8 @@
 //!
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Date;
 
@@ -174,12 +176,46 @@ public class PEHeader implements Header
     }
   }
 
+  @Override
+  public String toString()
+  {
+    StringWriter sw = new StringWriter();
+    PrintWriter w = new PrintWriter(sw);
+    try
+    {
+      w.printf("Machine type:            %s\n", getMachine());
+      w.printf("Number of sections:      %d\n", getNumberOfSections());
+      w.printf("Timestamp:               %s\n", getTimeDateStamp());
+      w.printf("Pointer to symbol table: 0x%x\n", getPointerToSymbolTable());
+      w.printf("Number of symbols:       %d\n", getNumberOfSymbols());
+      w.printf("Size of optional header: %d\n", getSizeOfOptionalHeader());
+      w.printf("Characteristics:         0x%x\n", getCharacteristics());
+      for (String peCharType :
+        PECharacteristicTypes.getStrings(getCharacteristics()))
+      {
+        w.printf("                         %s\n", peCharType);
+      }
+    }
+    catch (IOException e)
+    {
+      w.println("I/O exception while reading the PE header:");
+      e.printStackTrace(w);
+    }
+    catch (EndOfStreamException e)
+    {
+      w.println("Reached the end of data before finishing the PE header.");
+      e.printStackTrace(w);
+    }
+
+    return sw.toString();
+  }
+
   void validate()
     throws IOException, BadExecutableFormatException
   {
     if (!isValid())
     {
-      throw new BadExecutableFormatException();
+      throw new BadExecutableFormatException("Invalid PE header.");
     }
   }
 

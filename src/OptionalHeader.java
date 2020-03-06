@@ -360,9 +360,16 @@ public class OptionalHeader implements Header
     try
     {
       int magicValue = getMagicValue();
-      // #TODO: check other value alignments
-      return (magicValue == 0x107 || magicValue == 0x10b ||
-        magicValue == 0x20b);
+      int fileAlignment = getFileAlignment();
+      return ((magicValue == 0x107 || magicValue == 0x10b ||
+        magicValue == 0x20b) &&
+        // File alignment must be a power of 2 (which can be checked with a
+        // popcount -- in this case, Integer.bitCount()) and must be inclusively
+        // between 512 and 64K.
+        (Integer.bitCount(fileAlignment) == 1 && fileAlignment <= 65536 &&
+          fileAlignment >= 512) &&
+        // Section alignment must be greater than or equal to file alignment.
+        (getSectionAlignment() >= fileAlignment));
     }
     catch (EndOfStreamException eofEx)
     {
@@ -439,13 +446,42 @@ public class OptionalHeader implements Header
     PrintWriter w = new PrintWriter(sw);
     try
     {
-      w.printf("Image type:              %s\n", getImageType());
+      w.printf("Image type:              %s\n", getImageState());
       w.printf("Linker version:          %d.%d\n", getMajorLinkerVersion(), 
         getMinorLinkerVersion());
       w.printf("Size of code:            %d\n", getSizeOfCode());
       w.printf("Size of data section(s): %d\n", getSizeOfInitializedData());
       w.printf("Size of BSS section(s):  %d\n", getSizeofUninitializedData());
-      // #TODO: the rest of this function
+      w.printf("Address of entry point:  0x%x\n", getAddressOfEntryPoint());
+      w.printf("Base of code:            0x%x\n", getBaseOfCode());
+      w.printf("Base of data:            0x%x\n", getBaseOfData());
+      w.printf("Image base:              0x%x\n", getImageBase());
+      w.printf("Section alignment:       %d\n", getSectionAlignment());
+      w.printf("File alignment:          %d\n", getFileAlignment());
+      w.printf("OS version:              %d.%d\n",
+        getMajorOperatingSystemVersion(), getMinorOperatingSystemVersion());
+      w.printf("Image/program version:   %d.%d\n",
+        getMajorImageVersion(), getMinorImageVersion());
+      w.printf("Subsystem version:       %d.%d\n",
+        getMajorSubsystemVersion(), getMinorSubsystemVersion());
+      w.printf("Win32 version:           %d\n", getWin32VersionValue());
+      w.printf("Size of image:           %d\n", getSizeOfImage());
+      w.printf("Size of headers:         %d\n", getSizeOfHeaders());
+      w.printf("Checksum:                0x%x\n", getChecksum());
+      w.printf("Windows subsystem:       %s\n", getSubsystem());
+      w.printf("DLL characteristics:     0x%x\n", getDllCharacteristics());
+      for (String dllCharType :
+        DllCharacteristicTypes.getStrings(getDllCharacteristics()))
+      {
+        w.printf("                         %s\n", dllCharType);
+      }
+
+      w.printf("Size of stack (reserve): %d\n", getSizeOfStackReserve());
+      w.printf("Size of stack (commit):  %d\n", getSizeOfStackCommit());
+      w.printf("Size of heap (reserve):  %d\n", getSizeOfHeapReserve());
+      w.printf("Size of heap (commit):   %d\n", getSizeOfHeapCommit());
+      w.printf("Loader flags:            %d\n", getLoaderFlags());
+      w.printf("Data directory count:    %d\n", getNumberOfRvaAndSizes());
     }
     catch (IOException e)
     {
@@ -458,12 +494,17 @@ public class OptionalHeader implements Header
         "Optional header.");
       e.printStackTrace(w);
     }
+
+    return sw.toString();
   }
 
   void validate()
     throws IOException, BadExecutableFormatException
   {
-    // #TODO
+    if (!isValid())
+    {
+      throw new BadExecutableFormatException("Invalid optional header.");
+    }
   }
 
   private long relpos(long pos)

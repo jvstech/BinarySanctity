@@ -38,6 +38,7 @@ class PEFileReadTest
     PortableExecutableFileChannel peFile =
       new PortableExecutableFileChannel(getDecodedData());
     PEHeader peHeader = peFile.getPEHeader();
+    System.out.println(peHeader);
     assertTrue(peHeader.isValid());
     assertEquals(MachineType.AMD64, peHeader.getMachine());
     assertEquals(6, peHeader.getNumberOfSections());
@@ -58,6 +59,7 @@ class PEFileReadTest
     PortableExecutableFileChannel peFile =
       new PortableExecutableFileChannel(decodedData);
     OptionalHeader optHeader = peFile.getOptionalHeader();
+    System.out.println(optHeader);
 
     assertTrue(optHeader.isValid());
     assertEquals(ImageStateType.PE64, optHeader.getImageState());

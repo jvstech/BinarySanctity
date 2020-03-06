@@ -90,7 +90,7 @@ public class DataDirectory implements Header
   @Override
   public String toString()
   {
-    return String.format("%s (0x%x, size = %d)",
+    return String.format("%s (0x%x, size: %d)",
       index_, virtualAddress_, size_);
   }
 

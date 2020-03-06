@@ -7,6 +7,8 @@
 //!                 DLL characteristics found in the PE optional header.
 //!
 
+import java.util.*;
+
 public class DllCharacteristicTypes
 {
   public static final int HIGH_ENTROPY_VIRTUAL_ADDRESS_SPACE = 0x0020;
@@ -22,4 +24,38 @@ public class DllCharacteristicTypes
   public static final int TERMINAL_SERVER_AWARE = 0x8000;
 
   public static final int FIELD_MASK = 0xafc0;
+
+  private static final Map<Integer, String> kTypeNames;
+
+  static
+  {
+    kTypeNames = new HashMap<>();
+    kTypeNames.put(HIGH_ENTROPY_VIRTUAL_ADDRESS_SPACE,
+      "HIGH_ENTROPY_VIRTUAL_ADDRESS_SPACE");
+    kTypeNames.put(DYNAMIC_BASE, "DYNAMIC_BASE");
+    kTypeNames.put(FORCE_INTEGRITY, "FORCE_INTEGRITY");
+    kTypeNames.put(NX_COMPATIBLE, "NX_COMPATIBLE");
+    kTypeNames.put(NO_ISOLATION, "NO_ISOLATION");
+    kTypeNames.put(NO_SEH, "NO_SEH");
+    kTypeNames.put(NO_BIND, "NO_BIND");
+    kTypeNames.put(APP_CONTAINER, "APP_CONTAINER");
+    kTypeNames.put(WDM_DRIVER, "WDM_DRIVER");
+    kTypeNames.put(CONTROL_FLOW_GUARD, "CONTROL_FLOW_GUARD");
+    kTypeNames.put(TERMINAL_SERVER_AWARE, "TERMINAL_SERVER_AWARE");
+  }
+
+  // Converts DLL characteristics flags to a list of strings
+  public static List<String> getStrings(int c)
+  {
+    ArrayList<String> types = new ArrayList<>();
+    for (int k : kTypeNames.keySet())
+    {
+      if ((c & k) != 0)
+      {
+        types.add(kTypeNames.get(k));
+      }
+    }
+
+    return types;
+  }
 }
