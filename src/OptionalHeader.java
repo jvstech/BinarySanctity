@@ -11,6 +11,8 @@
 //!
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 public class OptionalHeader implements Header
 {
@@ -428,6 +430,34 @@ public class OptionalHeader implements Header
   public PEHeader getPEHeader()
   {
     return peFile_.getPEHeader();
+  }
+  
+  @Override
+  public String toString()
+  {
+    StringWriter sw = new StringWriter();
+    PrintWriter w = new PrintWriter(sw);
+    try
+    {
+      w.printf("Image type:              %s\n", getImageType());
+      w.printf("Linker version:          %d.%d\n", getMajorLinkerVersion(), 
+        getMinorLinkerVersion());
+      w.printf("Size of code:            %d\n", getSizeOfCode());
+      w.printf("Size of data section(s): %d\n", getSizeOfInitializedData());
+      w.printf("Size of BSS section(s):  %d\n", getSizeofUninitializedData());
+      // #TODO: the rest of this function
+    }
+    catch (IOException e)
+    {
+      w.println("I/O exception while reading the Optional header:");
+      e.printStackTrace(w);
+    }
+    catch (EndOfStreamException e)
+    {
+      w.println("Reached the end of data before finishing reading the " +
+        "Optional header.");
+      e.printStackTrace(w);
+    }
   }
 
   void validate()
