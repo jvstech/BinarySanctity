@@ -32,7 +32,10 @@ public class Help
     StringWriter sw = new StringWriter();
     PrintWriter w = new PrintWriter(sw);
     w.println("B I N A R Y   S A N C T I T Y");
-    w.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+    w.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+    w.println("Jonathan Smith");
+    w.println("CMIS201-HYB2 Spring 2020");
+    w.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n");
     w.println("Binary Sanctity is an at-a-glance malware analysis " +
       "and scoring utility. Given a file, common malware characteristics " +
       "are checked and analyzed. Each analysis section is assigned a score. " +
