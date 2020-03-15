@@ -21,6 +21,11 @@ public class ReadOnlyBinaryFileChannel extends FileChannel
 {
   private final FileChannel file_;
 
+  public ReadOnlyBinaryFileChannel(FileChannel fileChannel)
+  {
+    file_ = fileChannel;
+  }
+
   public ReadOnlyBinaryFileChannel(FileInputStream fileInputStream)
   {
     file_ = fileInputStream.getChannel();

@@ -10,6 +10,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,10 +27,10 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   private final ExportDirectory exportDirectory_;
   private final ImportDirectory[] importDirectories_;
 
-  public PortableExecutableFileChannel(FileInputStream fileInputStream)
+  private PortableExecutableFileChannel(FileChannel fileChannel)
     throws IOException, EndOfStreamException, BadExecutableFormatException
   {
-    super(fileInputStream);
+    super(fileChannel);
     startPosition_ = position();
     dosHeader_ = new DOSHeader(this);
     peHeader_ = new PEHeader(this);
@@ -41,49 +42,35 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     importDirectories_ = loadImportDirectories(this);
   }
 
-  public PortableExecutableFileChannel(String filePath)
+  public static PortableExecutableFileChannel create(FileChannel fileChannel)
     throws IOException, EndOfStreamException, BadExecutableFormatException
   {
-    super(filePath);
-    startPosition_ = position();
-    dosHeader_ = new DOSHeader(this);
-    peHeader_ = new PEHeader(this);
-    optionalHeader_ = new OptionalHeader(this);
-    sections_ = loadSectionHeaders(this);
-    sectionTable_ = loadSectionTable(sections_);
-    dataDirectories_ = loadDataDirectories(this);
-    exportDirectory_ = loadExportDirectory(this);
-    importDirectories_ = loadImportDirectories(this);
+    return new PortableExecutableFileChannel(fileChannel);
   }
 
-  public PortableExecutableFileChannel(File file)
-    throws IOException, EndOfStreamException, BadExecutableFormatException
+  public static PortableExecutableFileChannel create(
+    FileInputStream fileInputStream)
+    throws EndOfStreamException, BadExecutableFormatException, IOException
   {
-    super(file);
-    startPosition_ = position();
-    dosHeader_ = new DOSHeader(this);
-    peHeader_ = new PEHeader(this);
-    optionalHeader_ = new OptionalHeader(this);
-    sections_ = loadSectionHeaders(this);
-    sectionTable_ = loadSectionTable(sections_);
-    dataDirectories_ = loadDataDirectories(this);
-    exportDirectory_ = loadExportDirectory(this);
-    importDirectories_ = loadImportDirectories(this);
+    return create(fileInputStream.getChannel());
   }
 
-  public PortableExecutableFileChannel(byte[] data)
+  public static PortableExecutableFileChannel create(String filePath)
     throws IOException, EndOfStreamException, BadExecutableFormatException
   {
-    super(data);
-    startPosition_ = position();
-    dosHeader_ = new DOSHeader(this);
-    peHeader_ = new PEHeader(this);
-    optionalHeader_ = new OptionalHeader(this);
-    sections_ = loadSectionHeaders(this);
-    sectionTable_ = loadSectionTable(sections_);
-    dataDirectories_ = loadDataDirectories(this);
-    exportDirectory_ = loadExportDirectory(this);
-    importDirectories_ = loadImportDirectories(this);
+    return create((new FileInputStream(filePath)).getChannel());
+  }
+
+  public static PortableExecutableFileChannel create(File file)
+    throws IOException, EndOfStreamException, BadExecutableFormatException
+  {
+    return create((new FileInputStream(file).getChannel()));
+  }
+
+  public static PortableExecutableFileChannel create(byte[] data)
+    throws EndOfStreamException, BadExecutableFormatException, IOException
+  {
+    return create(new ReadOnlyBinaryFileChannel(data));
   }
 
   public long getStartPosition()

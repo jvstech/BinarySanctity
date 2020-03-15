@@ -70,6 +70,11 @@ public class SectionHeader implements Header
     return getStartOffset() + getHeaderSize();
   }
 
+  public PortableExecutableFileChannel getPEFile()
+  {
+    return peFile_;
+  }
+
   // An 8-byte, null-padded UTF-8 encoded string. If the string is exactly 8
   // characters long, there is no terminating null. For longer names, this field
   // contains a slash (/) that is followed by an ASCII representation of a

@@ -19,7 +19,7 @@ class PEFileReadTest
     throws Exception
   {
     PortableExecutableFileChannel peFile =
-      new PortableExecutableFileChannel(getDecodedData());
+      PortableExecutableFileChannel.create(TestUtil.getHelloWorldExeBytes());
     DOSHeader dosHeader = peFile.getDOSHeader();
     System.out.println(dosHeader);
     assertTrue(dosHeader.isValid());
@@ -36,7 +36,7 @@ class PEFileReadTest
     throws Exception
   {
     PortableExecutableFileChannel peFile =
-      new PortableExecutableFileChannel(getDecodedData());
+      PortableExecutableFileChannel.create(TestUtil.getHelloWorldExeBytes());
     PEHeader peHeader = peFile.getPEHeader();
     System.out.println(peHeader);
     assertTrue(peHeader.isValid());
@@ -55,9 +55,9 @@ class PEFileReadTest
   void optionalHeaderFromStream()
     throws Exception
   {
-    byte[] decodedData = getDecodedData();
+    byte[] decodedData = TestUtil.getHelloWorldExeBytes();
     PortableExecutableFileChannel peFile =
-      new PortableExecutableFileChannel(decodedData);
+      PortableExecutableFileChannel.create(decodedData);
     OptionalHeader optHeader = peFile.getOptionalHeader();
     System.out.println(optHeader);
 
@@ -100,9 +100,9 @@ class PEFileReadTest
   void dataDirectories()
     throws Exception
   {
-    byte[] decodedData = getDecodedData();
+    byte[] decodedData = TestUtil.getHelloWorldExeBytes();
     PortableExecutableFileChannel peFile =
-      new PortableExecutableFileChannel(decodedData);
+      PortableExecutableFileChannel.create(decodedData);
     DataDirectory[] directories = peFile.getDataDirectories();
     for (DataDirectory directory : peFile.getExistingDataDirectories())
     {
@@ -123,9 +123,15 @@ class PEFileReadTest
   void sectionHeaders()
     throws Exception
   {
-    byte[] decodedData = getDecodedData();
+    byte[] decodedData = TestUtil.getHelloWorldExeBytes();
     PortableExecutableFileChannel peFile =
-      new PortableExecutableFileChannel(decodedData);
+      PortableExecutableFileChannel.create(decodedData);
+    for (SectionHeader section : peFile.getSections())
+    {
+      System.out.println(section + " = " +
+        SectionCharacteristicTypes.getStrings(section.getCharacteristics()));
+    }
+
     assertEquals(6, peFile.getPEHeader().getNumberOfSections());
     assertEquals(".text", peFile.getSection(0).getName());
     assertEquals(0x1000, peFile.getSection(0).getVirtualAddress());
@@ -143,9 +149,9 @@ class PEFileReadTest
   void importNames()
     throws Exception
   {
-    byte[] decodedData = getDecodedData();
+    byte[] decodedData = TestUtil.getHelloWorldExeBytes();
     PortableExecutableFileChannel peFile =
-      new PortableExecutableFileChannel(decodedData);
+      PortableExecutableFileChannel.create(decodedData);
     String[] importedFuncNames = new String[]
       {
         "QueryPerformanceCounter",
@@ -226,18 +232,5 @@ class PEFileReadTest
     {
       assertEquals(importedFuncNames[i], lookupTable[i].toString());
     }
-  }
-
-  private static byte[] getDecodedData()
-    throws IOException, URISyntaxException
-  {
-    URI testDataUri =
-      PEFileReadTest.class.getResource("hello-world.b64").toURI();
-    Path testDataPath = Paths.get(testDataUri);
-
-    String encodedData =
-      new String(Files.readAllBytes(testDataPath), StandardCharsets.UTF_8);
-    byte[] decodedData = Base64.getDecoder().decode(encodedData);
-    return decodedData;
   }
 }
