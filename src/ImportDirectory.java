@@ -53,7 +53,7 @@ public class ImportDirectory implements Header
       .getRVA();
     importLookupTableRVA_ =
       new RelativeVirtualAddress(peFile_.readInt32(relpos(
-        Offsets.IMPORT_ADDRESS_TABLE_RVA.position)), peFile_.getSections());
+        Offsets.IMPORT_LOOKUP_TABLE_RVA.position)), peFile_.getSections());
     nameRVA_ =
       new RelativeVirtualAddress(peFile_.readInt32(relpos(
         Offsets.NAME_RVA.position)), peFile_.getSections());

@@ -27,7 +27,9 @@ import java.util.Base64;
 
 public class Help
 {
-  public static void about()
+  public static final String ABOUT_TEXT;
+
+  static
   {
     StringWriter sw = new StringWriter();
     PrintWriter w = new PrintWriter(sw);
@@ -42,7 +44,11 @@ public class Help
       "These scores are combined and amplified to generate a final, overall " +
       "score. This score does not guarantee that a file is malware -- it is " +
       "only meant to be a possible indicator of malicious behavior.");
+    ABOUT_TEXT = sw.toString();
+  }
 
+  public static void about()
+  {
     Color bgColor = Color.rgb(60, 63, 65);
     VBox layout = new VBox(5);
     layout.setPadding(new Insets(5));
@@ -61,7 +67,7 @@ public class Help
     // Info text
     TextArea aboutText = new TextArea();
     aboutText.setEditable(false);
-    aboutText.setText(sw.toString());
+    aboutText.setText(ABOUT_TEXT);
     aboutText.setFont(Font.font("Monospace", 14.0));
     aboutText.setStyle("-fx-control-inner-background: #3C3F41;");
     aboutText.setWrapText(true);

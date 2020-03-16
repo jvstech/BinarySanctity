@@ -49,6 +49,12 @@ public class SectionPermissionsScore extends Score
     return (getValue() > 0);
   }
 
+  @Override
+  public String getCharacterization()
+  {
+    return characterization_;
+  }
+
   private String characterize()
   {
     final int WX = SectionCharacteristicTypes.WRITE |
@@ -65,6 +71,10 @@ public class SectionPermissionsScore extends Score
       int expected = EXPECTED_CHARACTERISTICS.get(section_.getName());
       if (expected != characteristics_)
       {
+        addDetail("Expected: " +
+          SectionCharacteristicTypes.getStrings(expected));
+        addDetail("Actual:   " +
+          SectionCharacteristicTypes.getStrings(characteristics_));
         if ((characteristics_ & expected) == 0)
         {
           // characteristics are completely different than expected

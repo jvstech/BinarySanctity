@@ -18,6 +18,7 @@ public class PortableExecutableScore extends AggregateScore
     throws IOException, EndOfStreamException
   {
     indicatorThreshold_ = indicatorThreshold;
+    add(new SuspiciousImportsScore(peFile));
     for (SectionHeader section : peFile.getSections())
     {
       add(new SectionScore(section));

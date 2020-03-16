@@ -14,6 +14,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeMap;
 
 public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
 {
@@ -152,6 +153,33 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   public ImportDirectory[] getImportDirectories()
   {
     return importDirectories_;
+  }
+
+  public TreeMap<String, String[]> getImportedNames()
+    throws IOException, EndOfStreamException
+  {
+    TreeMap<String, String[]> importedNames = new TreeMap<>();
+    if (!hasDataDirectory(DataDirectoryIndex.IMPORT_TABLE))
+    {
+      return importedNames;
+    }
+
+    for (ImportDirectory importDirectory : importDirectories_)
+    {
+      ArrayList<String> nameList = new ArrayList<>();
+      for (ImportLookup importLookup : importDirectory.getImportLookupTable())
+      {
+        if (!importLookup.isImportByOrdinal())
+        {
+          nameList.add(importLookup.getName());
+        }
+      }
+
+      importedNames.put(importDirectory.getName(),
+        nameList.toArray(new String[0]));
+    }
+
+    return importedNames;
   }
 
   private void validateAll()

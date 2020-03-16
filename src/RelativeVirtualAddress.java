@@ -25,9 +25,10 @@ public class RelativeVirtualAddress
     int i = 0;
     for (SectionHeader section : sections)
     {
-      int pos = value_ - section.getVirtualAddress();
-      if (pos >= 0 && pos < section.getVirtualAddress())
+      if (value_ >= 0 && value_ >= section.getVirtualAddress() &&
+        value_ < section.getVirtualAddress() + section.getVirtualSize())
       {
+        int pos = value_ - section.getVirtualAddress();
         section_ = section;
         sectionIndex_ = i;
         filePosition_ = (long)pos + section.getPointerToRawData();

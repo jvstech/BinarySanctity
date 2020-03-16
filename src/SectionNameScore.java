@@ -69,6 +69,8 @@ public class SectionNameScore extends Score
         if (entropyScore.isSoftMalwareIndication())
         {
           score = 100;
+          addDetail(String.format("Entropy: %.2f (%d)",
+            entropyScore.getEntropyValue(), entropyScore.getValue()));
           return entry.getValue() + " with high entropy";
         }
         else

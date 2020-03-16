@@ -12,6 +12,7 @@ import java.nio.channels.FileChannel;
 
 public class EntropyScore extends Score
 {
+  private static final double MIN_SCORE = Math.nextUp(6.0);
   private final double entropyValue_;
   private String title_ = "Entropy";
 
@@ -29,13 +30,13 @@ public class EntropyScore extends Score
     entropyValue_ = entropy.getValue();
     // Linearly interpolate the entropy value and normalize the score to a
     // max value of 50, tossing out any entropy values under 5.9.
-    if (entropyValue_ < 5.9)
+    if (entropyValue_ < MIN_SCORE)
     {
       setValue(0);
     }
     else
     {
-      setValue((int)MathUtil.experp(entropyValue_, 6.0, 8.0, 0.0, 50.0));
+      setValue((int)MathUtil.experp(entropyValue_, MIN_SCORE, 8.0, 0.0, 50.0));
     }
   }
 
@@ -58,6 +59,11 @@ public class EntropyScore extends Score
     this(null, fileChannel);
   }
 
+  public double getEntropyValue()
+  {
+    return entropyValue_;
+  }
+
   @Override
   public String getTitle()
   {
@@ -74,13 +80,13 @@ public class EntropyScore extends Score
   @Override
   public boolean isSoftMalwareIndication()
   {
-    return entropyValue_ >= 6.0;
+    return (entropyValue_ >= MIN_SCORE);
   }
 
   @Override
   public String getCharacterization()
   {
-    if (entropyValue_ >= 6.0 && entropyValue_ < 7.0)
+    if (entropyValue_ >= MIN_SCORE && entropyValue_ < 7.0)
     {
       return "possibly compressed";
     }

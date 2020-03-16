@@ -6,15 +6,14 @@
 //! @description    Provides the base class for malware characterization scores.
 //!
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public abstract class Score
 {
   private Score parent_ = null;
   private int value_;
   private TreeMap<Integer, String> characterization_ = new TreeMap<>();
+  private LinkedHashSet<String> details_ = new LinkedHashSet<>();
 
   public int getValue()
   {
@@ -64,6 +63,24 @@ public abstract class Score
     return this;
   }
 
+  protected Score addDetail(String detail)
+  {
+    details_.add(detail);
+    return this;
+  }
+
+  protected Score addDetails(Collection<? extends String> details)
+  {
+    details_.addAll(details);
+    return this;
+  }
+
+  protected Score setDetails(Collection<? extends String> details)
+  {
+    details_.clear();
+    return addDetails(details);
+  }
+
   public abstract String getTitle();
   public abstract String getDescription();
   public abstract boolean isSoftMalwareIndication();
@@ -73,12 +90,23 @@ public abstract class Score
   {
     String characterization = getCharacterization();
     String indent = String.join("", Collections.nCopies(getDepth() * 2, " "));
+    String brief = null;
     if (characterization == null || characterization.isEmpty())
     {
-      return String.format("%s%s - %d", indent, getTitle(), getValue());
+      brief = String.format("%s%s - %d", indent, getTitle(), getValue());
+    }
+    else
+    {
+      brief = String.format("%s%s - %d (%s)", indent, getTitle(), getValue(),
+        characterization);
     }
 
-    return String.format("%s%s - %d (%s)", indent, getTitle(), getValue(),
-      characterization);
+    if (details_.isEmpty())
+    {
+      return brief;
+    }
+
+    brief += "\n  " + indent + String.join("\n" + indent + "  ", details_);
+    return brief;
   }
 }
