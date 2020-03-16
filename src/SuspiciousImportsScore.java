@@ -9,6 +9,7 @@
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SuspiciousImportsScore extends Score
@@ -222,14 +223,18 @@ public class SuspiciousImportsScore extends Score
       boolean hasRequiredMatch =
         Arrays.stream(suspiciousImports.getNames())
           .anyMatch(names -> Arrays.stream(names)
-            .allMatch(importedNames::contains));
+            .allMatch(name -> importedNames.stream()
+              .anyMatch(importedName ->
+                Pattern.matches("^" + name + "$", importedName))));
       if (hasRequiredMatch)
       {
         currentScore = suspiciousImports.getScore();
         boolean hasOptionalMatch =
           Arrays.stream(suspiciousImports.getOptionalNames())
           .anyMatch(names -> Arrays.stream(names)
-          .allMatch(importedNames::contains));
+          .allMatch(name -> importedNames.stream()
+            .anyMatch(importedName ->
+              Pattern.matches("^" + name + "$", importedName))));
         if (hasOptionalMatch)
         {
           currentScore = suspiciousImports.getOptionalScore();
