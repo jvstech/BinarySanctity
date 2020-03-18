@@ -69,7 +69,8 @@ public class SectionPermissionsScore extends Score
     if (EXPECTED_CHARACTERISTICS.containsKey(section_.getName()))
     {
       int expected = EXPECTED_CHARACTERISTICS.get(section_.getName());
-      if (expected != characteristics_)
+      if (expected !=
+        SectionCharacteristicTypes.getWithoutAlignments(characteristics_))
       {
         addDetail("Expected: " +
           SectionCharacteristicTypes.getStrings(expected));
@@ -87,7 +88,6 @@ public class SectionPermissionsScore extends Score
           setValue(10);
           return "unexpected characteristics for reserved section";
         }
-
       }
     }
 

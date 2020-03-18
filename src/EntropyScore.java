@@ -86,6 +86,9 @@ public class EntropyScore extends Score
   @Override
   public String getCharacterization()
   {
+    // #TODO: This could be made much more robust with Monte Carlo pi
+    //  calculation (and another calculation I can't remember the name of)
+
     if (entropyValue_ >= MIN_SCORE && entropyValue_ < 7.0)
     {
       return "possibly compressed";

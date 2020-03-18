@@ -62,12 +62,7 @@ public class BinarySanctity extends Application
         System.out.println("I/O exception. " + e.getMessage());
         e.printStackTrace();
       }
-      catch (EndOfStreamException e)
-      {
-        System.out.println(e.getMessage());
-        e.printStackTrace();
-      }
-      catch (BadExecutableFormatException e)
+      catch (EndOfStreamException | BadExecutableFormatException e)
       {
         System.out.println(e.getMessage());
         e.printStackTrace();

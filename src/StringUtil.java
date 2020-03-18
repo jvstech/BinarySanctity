@@ -33,4 +33,42 @@ public class StringUtil
   {
     return wordWrap(s, 80);
   }
+
+  public static String escape(String s)
+  {
+    if (s == null || s.isEmpty())
+    {
+      return s;
+    }
+
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < s.length(); ++i)
+    {
+      char c = s.charAt(i);
+      int code = (int)c;
+
+      if (c == '\\')
+      {
+        sb.append("\\\\");
+      }
+      else if (code == 0xa)
+      {
+        sb.append("\\n");
+      }
+      else if (code == 0xd)
+      {
+        sb.append("\\r");
+      }
+      else if (code == 0x9)
+      {
+        sb.append("\\t");
+      }
+      else
+      {
+        sb.append(c);
+      }
+    }
+
+    return sb.toString();
+  }
 }

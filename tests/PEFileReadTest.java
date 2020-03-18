@@ -1,14 +1,4 @@
-import com.sun.xml.internal.ws.wsdl.writer.document.Import;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -231,6 +221,18 @@ class PEFileReadTest
     for (int i = 0; i < importedFuncNames.length; i++)
     {
       assertEquals(importedFuncNames[i], lookupTable[i].toString());
+    }
+  }
+
+  @Test
+  void findStrings()
+    throws Exception
+  {
+    PortableExecutableFileChannel peFile =
+      PortableExecutableFileChannel.create(TestUtil.getHelloWorldExeBytes());
+    for (String s : Strings.find(peFile))
+    {
+      System.out.println(StringUtil.escape(s));
     }
   }
 }

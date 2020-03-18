@@ -96,4 +96,14 @@ public class SectionCharacteristicTypes
 
     return types;
   }
+
+  // Returns section characteristics without any of the ALIGN flags
+  public static int getWithoutAlignments(int c)
+  {
+    // The ALIGN_*_BYTES characteristics aren't all single-bit flags. Only a few
+    // have to be removed to end up removing all of them.
+    return (c & ~(ALIGN_1_BYTES | ALIGN_2_BYTES | ALIGN_8_BYTES |
+      ALIGN_128_BYTES));
+  }
+
 }
