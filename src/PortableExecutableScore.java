@@ -25,6 +25,11 @@ public class PortableExecutableScore extends AggregateScore
     {
       add(new SectionScore(section));
     }
+
+    add(new ExecutableSectionCountScore(peFile));
+
+    // #TODO: Check for the following things:
+    //    * multiple sections with the same names
   }
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile)
@@ -36,7 +41,7 @@ public class PortableExecutableScore extends AggregateScore
   @Override
   public int getValue()
   {
-    return getAverageScore();
+    return getTotalScore();
   }
 
   @Override
@@ -48,7 +53,7 @@ public class PortableExecutableScore extends AggregateScore
   @Override
   public String getDescription()
   {
-    return "Average malware characterization for a complete PE file";
+    return "Malware characterization for a complete PE file";
   }
 
   @Override

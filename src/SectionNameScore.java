@@ -8,19 +8,24 @@
 //!
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 public class SectionNameScore extends Score
 {
   private static final HashMap<Pattern, String> PACKED_SECTION_PATTERNS;
+  private static final TreeSet<String> RESERVED_SECTION_NAMES;
+
   private final SectionHeader section_;
   private final String characterization_;
 
   static
   {
     PACKED_SECTION_PATTERNS = getPackedSectionPatterns();
+    RESERVED_SECTION_NAMES = getReservedSectionNames();
   }
 
   public SectionNameScore(SectionHeader section)
@@ -57,27 +62,39 @@ public class SectionNameScore extends Score
   private String characterize()
     throws IOException, EndOfStreamException
   {
-    int score = 0;
+    if (StringUtil.isWhiteSpace(section_.getName()))
+    {
+      setValue(100);
+      return "Empty/whitespace-only section name";
+    }
+
     for (Map.Entry<Pattern, String> entry : PACKED_SECTION_PATTERNS.entrySet())
     {
       if (entry.getKey().matcher(section_.getName()).matches())
       {
-        score = 50;
         // This section has a name set by a known packer. Check its entropy.
         EntropyScore entropyScore = new EntropyScore(section_.getPEFile(),
           section_.getRVA().getFilePosition(), section_.getSizeOfRawData());
         if (entropyScore.isSoftMalwareIndication())
         {
-          score = 100;
+          setValue(150);
           addDetail(String.format("Entropy: %.2f (%d)",
             entropyScore.getEntropyValue(), entropyScore.getValue()));
           return entry.getValue() + " with high entropy";
         }
         else
         {
+          setValue(100);
           return entry.getValue() + " packed";
         }
       }
+    }
+
+    if (RESERVED_SECTION_NAMES.stream()
+      .noneMatch(s -> s.equals(section_.getName())))
+    {
+      setValue(10);
+      return "Uncommon section name";
     }
 
     return null;
@@ -89,5 +106,34 @@ public class SectionNameScore extends Score
     packerPatterns.put(Pattern.compile("^[_\\.]UPX\\d*$"), "UPX");
     packerPatterns.put(Pattern.compile("^SR$"), "Armadillo");
     return packerPatterns;
+  }
+
+  private static TreeSet<String> getReservedSectionNames()
+  {
+    return new TreeSet<>(Arrays.asList(
+      ".bss",
+      ".cormeta",
+      ".data",
+      ".debug$F",
+      ".debug$P",
+      ".debug$S",
+      ".debug$T",
+      ".drective",
+      ".edata",
+      ".idata",
+      ".idlsym",
+      ".pdata",
+      ".rdata",
+      ".reloc",
+      ".rsrc",
+      ".sbss",
+      ".sdata",
+      ".srdata",
+      ".sxdata",
+      ".text",
+      ".tls",
+      ".tls$",
+      ".vsdata",
+      ".xdata"));
   }
 }

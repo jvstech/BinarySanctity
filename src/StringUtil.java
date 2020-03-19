@@ -6,6 +6,8 @@
 //! @description    Collection of utility functions for working with strings.
 //!
 
+import java.util.Arrays;
+
 public class StringUtil
 {
   // Adds newlines to strings to wrap long text without breaking words
@@ -70,5 +72,35 @@ public class StringUtil
     }
 
     return sb.toString();
+  }
+
+  // Returns true if a string is empty or consists of nothing but whitespace
+  public static boolean isWhiteSpace(String s)
+  {
+    if (s == null)
+    {
+      return false;
+    }
+
+    if (s.isEmpty())
+    {
+      return true;
+    }
+
+    for (int i = 0; i < s.length(); ++i)
+    {
+      if (!Character.isWhitespace(s.charAt(i)))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Returns true if a string is null, empty, or only whitespace
+  public static boolean isNullOrWhiteSpace(String s)
+  {
+    return (s == null || isWhiteSpace(s));
   }
 }
