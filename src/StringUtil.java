@@ -7,9 +7,13 @@
 //!
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.regex.Pattern;
 
 public class StringUtil
 {
+  private static HashMap<String, Pattern> compiledPatterns = new HashMap<>();
+
   // Adds newlines to strings to wrap long text without breaking words
   public static String wordWrap(String s, int columns, int startPosition)
   {
@@ -36,7 +40,7 @@ public class StringUtil
     return wordWrap(s, 80);
   }
 
-  public static String escape(String s)
+  public static String escape(String s, boolean full)
   {
     if (s == null || s.isEmpty())
     {
@@ -67,11 +71,28 @@ public class StringUtil
       }
       else
       {
-        sb.append(c);
+        if (full && (code < 0x20 || code > 0x7e))
+        {
+          sb.append(String.format("\\x%02x", code));
+        }
+        else
+        {
+          sb.append(c);
+        }
       }
     }
 
     return sb.toString();
+  }
+
+  public static String escape(String s)
+  {
+    return escape(s, false);
+  }
+
+  public static String escapeFull(String s)
+  {
+    return escape(s, true);
   }
 
   // Returns true if a string is empty or consists of nothing but whitespace
@@ -102,5 +123,37 @@ public class StringUtil
   public static boolean isNullOrWhiteSpace(String s)
   {
     return (s == null || isWhiteSpace(s));
+  }
+
+  // Returns true if a string matches the given regex pattern
+  public static boolean isMatch(String s, String pattern, boolean compiled)
+  {
+    if (s == null)
+    {
+      return false;
+    }
+
+    if (compiled)
+    {
+      Pattern compiledPattern = null;
+      if (!compiledPatterns.containsKey(pattern))
+      {
+        compiledPattern = Pattern.compile(pattern);
+        compiledPatterns.put(pattern, compiledPattern);
+      }
+      else
+      {
+        compiledPattern = compiledPatterns.get(pattern);
+      }
+
+      return compiledPattern.matcher(s).matches();
+    }
+
+    return (Pattern.matches(pattern, s));
+  }
+
+  public static boolean isMatch(String s, String pattern)
+  {
+    return isMatch(s, pattern, false);
   }
 }

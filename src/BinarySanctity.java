@@ -9,6 +9,7 @@
 import javafx.application.Application;
 import javafx.stage.Stage;
 
+import java.io.Console;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,7 +21,8 @@ public class BinarySanctity extends Application
   public static void main(String[] args)
   {
     // #TODO: switch these if/else clauses eventually.
-    if (args == null || args.length == 0)
+    if (args == null || args.length == 0 ||
+      Arrays.stream(args).noneMatch(s -> s.equals("-ui")))
     {
       int exitCode = runConsoleMode(args);
       System.exit(exitCode);
@@ -34,6 +36,12 @@ public class BinarySanctity extends Application
   private static int runConsoleMode(String[] args)
   {
     System.out.println(StringUtil.wordWrap(Help.ABOUT_TEXT, 80, 132));
+
+    if (ConsoleCommands.handle(args))
+    {
+      return ConsoleCommands.getExitCode();
+    }
+
     ArrayList<String> inputFilePaths = new ArrayList<>();
     inputFilePaths.addAll(Arrays.asList(args));
     if (inputFilePaths.isEmpty())

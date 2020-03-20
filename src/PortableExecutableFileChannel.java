@@ -34,8 +34,11 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     super(fileChannel);
     startPosition_ = position();
     dosHeader_ = new DOSHeader(this);
+    dosHeader_.validate();
     peHeader_ = new PEHeader(this);
+    peHeader_.validate();
     optionalHeader_ = new OptionalHeader(this);
+    optionalHeader_.validate();
     sections_ = loadSectionHeaders(this);
     sectionTable_ = loadSectionTable(sections_);
     dataDirectories_ = loadDataDirectories(this);
@@ -221,7 +224,10 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     PortableExecutableFileChannel peFile)
     throws BadExecutableFormatException, EndOfStreamException, IOException
   {
-    int dataDirCount = peFile.getOptionalHeader().getNumberOfRvaAndSizes();
+    // IMAGE_DATA_DIRECTORY is *always* 16 entries in size (16 entries * 8 bytes
+    // each = 128 bytes). Ignore what NumberOfRvaAndSizes says -- it can be
+    // forged.
+    int dataDirCount = DataDirectoryIndex.values().length - 1;
     DataDirectory[] dataDirectories = new DataDirectory[dataDirCount];
     for (int i = 0; i < dataDirCount; ++i)
     {

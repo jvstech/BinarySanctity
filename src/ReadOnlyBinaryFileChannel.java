@@ -93,7 +93,7 @@ public class ReadOnlyBinaryFileChannel extends FileChannel
   {
     ByteBuffer byteBuffer = ByteBuffer.allocate(count);
     int bytesRead = read(byteBuffer, position);
-    if (bytesRead == 0)
+    if (bytesRead <= 0)
     {
       throw new EndOfStreamException();
     }
@@ -350,6 +350,11 @@ public class ReadOnlyBinaryFileChannel extends FileChannel
       {
         sb.append((char)charVal);
         ++position;
+        if (position >= size())
+        {
+          break;
+        }
+
         charVal = readUInt8(position);
       }
     }

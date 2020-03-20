@@ -34,21 +34,30 @@ public class HintName implements Header
 
     peFile_ = peFile;
     rva_ = rva;
-    hint_ = peFile_.readUInt16(rva_.getFilePosition());
-    name_ = peFile_.readCString(rva_.getFilePosition() + 2);
-    // If the name length is even, including the trailing null byte would have
-    // this entry end on an odd boundary. In this case, an extra null pad byte
-    // is added. Therefore, if the name length is even, we must add two bytes to
-    // the length to indicate where the next HintName begins. If the name length
-    // is odd, the trailing null byte ends on a HintName boundary, so we only
-    // need to add a single byte to compensate for the trailing null.
-    if (name_.length() % 2 == 0)
+    if (rva_.isValid(peFile))
     {
-      headerSize_ = 2 + name_.length() + 2;
+      hint_ = peFile_.readUInt16(rva_.getFilePosition());
+      name_ = peFile_.readCString(rva_.getFilePosition() + 2);
+      // If the name length is even, including the trailing null byte would have
+      // this entry end on an odd boundary. In this case, an extra null pad byte
+      // is added. Therefore, if the name length is even, we must add two bytes
+      // to the length to indicate where the next HintName begins. If the name
+      // length is odd, the trailing null byte ends on a HintName boundary, so
+      // we only need to add a single byte to compensate for the trailing null.
+      if (name_.length() % 2 == 0)
+      {
+        headerSize_ = 2 + name_.length() + 2;
+      }
+      else
+      {
+        headerSize_ = 2 + name_.length() + 1;
+      }
     }
     else
     {
-      headerSize_ = 2 + name_.length() + 1;
+      hint_ = 0;
+      name_ = null;
+      headerSize_ = 0;
     }
   }
 

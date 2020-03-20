@@ -17,4 +17,10 @@ public class SectionEntropyScore extends EntropyScore
     super("Section entropy", section.getPEFile(),
       section.getRVA().getFilePosition(), section.getSizeOfRawData());
   }
+
+  @Override
+  public boolean isSoftMalwareIndication()
+  {
+    return (getValue() > 0);
+  }
 }

@@ -90,11 +90,18 @@ public class SectionNameScore extends Score
       }
     }
 
+    if (!StringUtil.isMatch(section_.getName(),
+      "^[_\\.]*[a-zA-Z0-9\\$]+", true))
+    {
+      setValue(50);
+      return "uncommon section name with unusual characters";
+    }
+
     if (RESERVED_SECTION_NAMES.stream()
       .noneMatch(s -> s.equals(section_.getName())))
     {
       setValue(10);
-      return "Uncommon section name";
+      return "uncommon section name";
     }
 
     return null;

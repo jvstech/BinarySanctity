@@ -11,6 +11,8 @@
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ImportDirectory implements Header
 {
@@ -42,6 +44,8 @@ public class ImportDirectory implements Header
   private RelativeVirtualAddress importAddressTableRVA_;
   private String name_;
   private ImportLookup[] importLookupTable_;
+  private boolean valid_ = true;
+  private ArrayList<String> parseErrors_ = new ArrayList<>();
 
   public ImportDirectory(PortableExecutableFileChannel peFile, int row)
     throws IOException, EndOfStreamException
@@ -51,15 +55,75 @@ public class ImportDirectory implements Header
     rva_ = peFile_
       .getDataDirectories()[DataDirectoryIndex.IMPORT_TABLE.ordinal()]
       .getRVA();
-    importLookupTableRVA_ =
-      new RelativeVirtualAddress(peFile_.readInt32(relpos(
-        Offsets.IMPORT_LOOKUP_TABLE_RVA.position)), peFile_.getSections());
-    nameRVA_ =
-      new RelativeVirtualAddress(peFile_.readInt32(relpos(
-        Offsets.NAME_RVA.position)), peFile_.getSections());
-    importAddressTableRVA_ =
-      new RelativeVirtualAddress(peFile_.readInt32(relpos(
-        Offsets.IMPORT_ADDRESS_TABLE_RVA.position)), peFile_.getSections());
+    if (!rva_.isValid(peFile_) || rva_.getSection() == null)
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Invalid import directory RVA. (%s)",
+        rva_.toDiagnosticString(peFile_)));
+    }
+
+    long pos = relpos(Offsets.IMPORT_LOOKUP_TABLE_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      importLookupTableRVA_ = new RelativeVirtualAddress(peFile_.readInt32(pos),
+        peFile_.getSections());
+      if (!importLookupTableRVA_.isValid(peFile_))
+      {
+        valid_ = false;
+        parseErrors_.add(String.format("Import lookup table file position is " +
+          "out of bounds. (%s)",
+          importLookupTableRVA_.toDiagnosticString(peFile_)));
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Import lookup table RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
+    pos = relpos(Offsets.NAME_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      nameRVA_ = new RelativeVirtualAddress(peFile_.readInt32(pos),
+        peFile_.getSections());
+      if (!nameRVA_.isValid(peFile_))
+      {
+        valid_ = false;
+        parseErrors_.add(String.format(
+          "Import library name file position is out of bounds. (%s)",
+          nameRVA_.toDiagnosticString(peFile_)));
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Import library name RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
+
+    pos = relpos(Offsets.IMPORT_ADDRESS_TABLE_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      importAddressTableRVA_ =
+        new RelativeVirtualAddress(peFile_.readInt32(pos),
+          peFile_.getSections());
+      if (!importAddressTableRVA_.isValid(peFile_))
+      {
+        valid_ = false;
+        parseErrors_.add(String.format("Import address table file position " +
+            "is out of bounds. (%s)",
+          importAddressTableRVA_.toDiagnosticString(peFile_)));
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Import address table RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
     if (isValid())
     {
       name_ = peFile_.readCString(nameRVA_.getFilePosition());
@@ -77,6 +141,11 @@ public class ImportDirectory implements Header
 
       importLookupTable_ = ilt.toArray(new ImportLookup[0]);
     }
+  }
+
+  public List<String> getParseErrors()
+  {
+    return Collections.unmodifiableList(parseErrors_);
   }
 
   public RelativeVirtualAddress getImportLookupTableRVA()
@@ -130,7 +199,9 @@ public class ImportDirectory implements Header
 
   public boolean isValid()
   {
-    return (importLookupTableRVA_.getValue() > 0);
+    return (valid_ && importLookupTableRVA_ != null &&
+      importLookupTableRVA_.getValue() > 0 &&
+      importLookupTableRVA_.getSection() != null);
   }
 
   @Override

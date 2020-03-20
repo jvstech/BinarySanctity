@@ -8,7 +8,6 @@
 //!
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.TreeMap;
 
 public class SectionPermissionsScore extends Score

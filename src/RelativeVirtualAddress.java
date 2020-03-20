@@ -10,6 +10,9 @@
 //!
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.channels.FileChannel;
 
 public class RelativeVirtualAddress
 {
@@ -67,6 +70,11 @@ public class RelativeVirtualAddress
     return value_;
   }
 
+  public boolean hasSection()
+  {
+    return (section_ != null);
+  }
+
   public SectionHeader getSection()
   {
     return section_;
@@ -94,6 +102,84 @@ public class RelativeVirtualAddress
     throws IOException, EndOfStreamException
   {
     return new RelativeVirtualAddress(value_ + offset, sections);
+  }
+
+  public boolean isValid(long fileSize)
+  {
+    return (DataUtil.isInBounds(getFilePosition(), fileSize));
+  }
+
+  public boolean isValid(FileChannel fileChannel)
+    throws IOException
+  {
+    return isValid(fileChannel.size());
+  }
+
+  public boolean isValid()
+  {
+    if (section_ != null)
+    {
+      try
+      {
+        return isValid(section_.getPEFile());
+      }
+      catch (IOException e)
+      {
+      }
+    }
+
+    return false;
+  }
+
+  public String toDiagnosticString(PortableExecutableFileChannel peFile)
+  {
+    StringWriter sw = new StringWriter();
+    PrintWriter w = new PrintWriter(sw);
+    sw.append("{ ");
+    w.printf("RVA: %d (0x%x)", value_, value_);
+    w.printf("; file offset: %d (0x%x)", filePosition_, filePosition_);
+    PortableExecutableFileChannel refPe = peFile;
+    if (refPe == null && section_ != null)
+    {
+      refPe = section_.getPEFile();
+    }
+
+    if (refPe != null)
+    {
+      long fileSize = 0;
+      try
+      {
+        fileSize = refPe.size();
+        w.printf("; file size: %d (0x%x)", fileSize, fileSize);
+      }
+      catch (IOException e)
+      {
+        // do nothing
+      }
+    }
+
+    if (section_ != null)
+    {
+      w.printf("; section: %d (%s)", sectionIndex_, section_);
+    }
+    else
+    {
+      w.printf("; section: %d (<invalid>)", sectionIndex_);
+    }
+
+    sw.append(" }");
+    return sw.toString();
+  }
+
+  public String toDiagnosticString()
+  {
+    return toDiagnosticString(null);
+  }
+
+  @Override
+  public String toString()
+  {
+    return toDiagnosticString();
   }
 
   public static RelativeVirtualAddress fromFileOffset(long offset,

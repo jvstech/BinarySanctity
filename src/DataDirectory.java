@@ -23,6 +23,12 @@ public class DataDirectory implements Header
   public DataDirectory(PortableExecutableFileChannel peFile, int directoryIndex)
     throws IOException, BadExecutableFormatException, EndOfStreamException
   {
+    if (directoryIndex < 0 ||
+      directoryIndex >= DataDirectoryIndex.values().length)
+    {
+      throw new IllegalArgumentException("Directory index is out of bounds.");
+    }
+
     peFile_ = peFile;
     index_ = DataDirectoryIndex.values()[directoryIndex];
     try

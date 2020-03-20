@@ -11,7 +11,10 @@
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 public class ExportDirectory implements Header
 {
@@ -51,6 +54,8 @@ public class ExportDirectory implements Header
   private RelativeVirtualAddress[] namePointerTable_;
   private String[] nameTable_;
   private Ordinal[] ordinalTable_;
+  private boolean valid_ = true;
+  private ArrayList<String> parseErrors_ = new ArrayList<>();
 
   public ExportDirectory(PortableExecutableFileChannel peFile)
     throws IOException, EndOfStreamException
@@ -64,33 +69,123 @@ public class ExportDirectory implements Header
     rva_ = peFile_
       .getDataDirectories()[DataDirectoryIndex.EXPORT_TABLE.ordinal()]
       .getRVA();
-    nameRVA_ = new RelativeVirtualAddress(
-      peFile_.readInt32(relpos(Offsets.NAME_RVA.position)),
-      peFile_.getSections());
-    name_ = peFile_.readCString(nameRVA_.getFilePosition());
-    exportAddressTableRVA_ = new RelativeVirtualAddress(
-      peFile_.readInt32(relpos(Offsets.EXPORT_ADDRESS_TABLE_RVA.position)),
-      peFile_.getSections());
-    namePointerRVA_ = new RelativeVirtualAddress(
-      peFile_.readInt32(relpos(Offsets.NAME_POINTER_RVA.position)),
-      peFile_.getSections());
-    ordinalTableRVA_ = new RelativeVirtualAddress(
-      peFile_.readInt32(relpos(Offsets.ORDINAL_TABLE_RVA.position)),
-      peFile_.getSections());
-    int numberOfNamePointers = getNumberOfNamePointers();
-    namePointerTable_ = new RelativeVirtualAddress[numberOfNamePointers];
-    nameTable_ = new String[numberOfNamePointers];
-    ordinalTable_ = new Ordinal[numberOfNamePointers];
-    for (int i = 0; i < numberOfNamePointers; i++)
+    if (!rva_.isValid(peFile_) || rva_.getSection() == null)
     {
-      namePointerTable_[i] = new RelativeVirtualAddress(
-        peFile_.readInt32(namePointerRVA_.getFilePosition()),
+      valid_ = false;
+      parseErrors_.add(String.format("Invalid export directory RVA. (%s)",
+        rva_.toDiagnosticString(peFile_)));
+    }
+
+    long pos = relpos(Offsets.NAME_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      nameRVA_ = new RelativeVirtualAddress(peFile_.readInt32(pos),
+        peFile_.getSections());
+      if (!nameRVA_.isValid() || nameRVA_.getSection() == null)
+      {
+        valid_ = false;
+        parseErrors_.add(String.format(
+          "Export library name RVA is invalid. (%s)",
+          nameRVA_.toDiagnosticString(peFile_)));
+        name_ = null;
+      }
+      else
+      {
+        name_ = peFile_.readCString(nameRVA_.getFilePosition());
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Export library name RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
+    pos = relpos(Offsets.EXPORT_ADDRESS_TABLE_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      exportAddressTableRVA_ = new RelativeVirtualAddress(
+        peFile_.readInt32(pos), peFile_.getSections());
+      if (!exportAddressTableRVA_.isValid(peFile_))
+      {
+        valid_ = false;
+        parseErrors_.add(String.format("Export address table file position " +
+          "is out of bounds. (%s)",
+          exportAddressTableRVA_.toDiagnosticString(peFile_)));
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Export address table RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
+    pos = relpos(Offsets.NAME_POINTER_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      namePointerRVA_ = new RelativeVirtualAddress(
+        peFile_.readInt32(relpos(Offsets.NAME_POINTER_RVA.position)),
+        peFile_.getSections());
+      if (!namePointerRVA_.isValid(peFile_) ||
+        namePointerRVA_.getSection() == null)
+      {
+        valid_ = false;
+        parseErrors_.add(String.format("Name pointer table file position is " +
+          "out of bounds. (%s)", namePointerRVA_.toDiagnosticString(peFile_)));
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Name pointer table RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
+    pos = relpos(Offsets.ORDINAL_TABLE_RVA.position);
+    if (DataUtil.isInBounds(pos, peFile_))
+    {
+      ordinalTableRVA_ = new RelativeVirtualAddress(peFile_.readInt32(pos),
+        peFile_.getSections());
+      if (!ordinalTableRVA_.isValid(peFile_) ||
+        ordinalTableRVA_.getSection() == null)
+      {
+        valid_ = false;
+        parseErrors_.add(String.format("Ordinal table file position is out " +
+          "of bounds. (%s)", ordinalTableRVA_.toDiagnosticString(peFile_)));
+      }
+    }
+    else
+    {
+      valid_ = false;
+      parseErrors_.add(String.format("Ordinal table RVA offset is out " +
+        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+    }
+
+    if (namePointerRVA_ != null && namePointerRVA_.getSection() != null &&
+      ordinalTableRVA_ != null && ordinalTableRVA_.getSection() != null)
+    {
+      int numberOfNamePointers = getNumberOfNamePointers();
+      namePointerTable_ = new RelativeVirtualAddress[numberOfNamePointers];
+      nameTable_ = new String[numberOfNamePointers];
+      ordinalTable_ = new Ordinal[numberOfNamePointers];
+      for (int i = 0; i < numberOfNamePointers; i++)
+      {
+        namePointerTable_[i] = new RelativeVirtualAddress(
+          peFile_.readInt32(namePointerRVA_.getFilePosition()),
           peFile_.getSections());
-      nameTable_[i] =
-        peFile_.readCString(namePointerTable_[i].getFilePosition());
-      ordinalTable_[i] = new Ordinal(peFile_.readUInt16(
-        ordinalTableRVA_.getFilePosition() + (i * 2)),
-        getOrdinalBase());
+        nameTable_[i] =
+          peFile_.readCString(namePointerTable_[i].getFilePosition());
+        ordinalTable_[i] = new Ordinal(peFile_.readUInt16(
+          ordinalTableRVA_.getFilePosition() + (i * 2)),
+          getOrdinalBase());
+      }
+    }
+    else
+    {
+      namePointerTable_ = new RelativeVirtualAddress[0];
+      nameTable_ = new String[0];
+      ordinalTable_ = new Ordinal[0];
     }
   }
 
@@ -199,6 +294,16 @@ public class ExportDirectory implements Header
     throws IOException, EndOfStreamException
   {
     return Date.from(Instant.ofEpochSecond(getTimeDateStampValue()));
+  }
+
+  public boolean isValid()
+  {
+    return valid_;
+  }
+
+  public List<String> getParseErrors()
+  {
+    return Collections.unmodifiableList(parseErrors_);
   }
 
   @Override

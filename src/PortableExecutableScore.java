@@ -8,6 +8,7 @@
 //!
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class PortableExecutableScore extends AggregateScore
 {
@@ -18,18 +19,18 @@ public class PortableExecutableScore extends AggregateScore
     throws IOException, EndOfStreamException
   {
     indicatorThreshold_ = indicatorThreshold;
-    // Suspicious imports
+    add(new MissingGUIImportsScore(peFile));
     add(new SuspiciousImportsScore(peFile));
     // Section scores
+    add(new ExecutableSectionCountScore(peFile));
     for (SectionHeader section : peFile.getSections())
     {
       add(new SectionScore(section));
     }
 
-    add(new ExecutableSectionCountScore(peFile));
-
     // #TODO: Check for the following things:
     //    * multiple sections with the same names
+    //    * sections with non-alphanumeric characters (excluding . _ $)
   }
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile)
