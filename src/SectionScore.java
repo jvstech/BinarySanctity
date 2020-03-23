@@ -24,7 +24,8 @@ public class SectionScore extends AggregateScore
   @Override
   public String getTitle()
   {
-    return section_.getName() + " section";
+    return String.format("Section \"%s\"",
+      StringUtil.escapeFull(section_.getName()));
   }
 
   @Override

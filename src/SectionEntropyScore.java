@@ -14,7 +14,7 @@ public class SectionEntropyScore extends EntropyScore
   public SectionEntropyScore(SectionHeader section)
     throws IOException, EndOfStreamException
   {
-    super("Section entropy", section.getPEFile(),
+    super("Entropy", section.getPEFile(),
       section.getRVA().getFilePosition(), section.getSizeOfRawData());
   }
 

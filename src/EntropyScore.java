@@ -28,7 +28,7 @@ public class EntropyScore extends Score
     ShannonEntropy entropy = ShannonEntropy.calculate(fileChannel,
       startPosition, dataLength);
     entropyValue_ = entropy.getValue();
-    // Linearly interpolate the entropy value and normalize the score to a
+    // Exponentially interpolate the entropy value and normalize the score to a
     // max value of 50, tossing out any entropy values under 5.9.
     if (entropyValue_ < MIN_SCORE)
     {

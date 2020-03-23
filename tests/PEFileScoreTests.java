@@ -1,8 +1,5 @@
 import org.junit.jupiter.api.Test;
 
-// Problematic files:
-//    Backdoor.Win32.Hupigon.buwj.665ddac0f5f90697c27bb4a1ce4ea294
-
 
 public class PEFileScoreTests
 {
@@ -38,7 +35,8 @@ public class PEFileScoreTests
     return new String[]
       {
         "Backdoor.Win32.Banito.ps.b64",
-        "UDS.DangerousObject.Multi.Generic.b64"
+        "UDS.DangerousObject.Multi.Generic.b64",
+        "Backdoor.Win32.Hupigon.buwj.b64"
       };
   }
 }

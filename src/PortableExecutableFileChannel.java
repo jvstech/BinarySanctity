@@ -11,10 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
 {
@@ -23,7 +20,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   private final PEHeader peHeader_;
   private final OptionalHeader optionalHeader_;
   private final SectionHeader[] sections_;
-  private final HashMap<String, SectionHeader> sectionTable_;
+  private final HashMap<String, List<SectionHeader>> sectionTable_;
   private final DataDirectory[] dataDirectories_;
   private final ExportDirectory exportDirectory_;
   private final ImportDirectory[] importDirectories_;
@@ -102,7 +99,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     return sections_;
   }
 
-  public final HashMap<String, SectionHeader> getSectionTable()
+  public final HashMap<String, List<SectionHeader>> getSectionTable()
   {
     return sectionTable_;
   }
@@ -112,9 +109,11 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     return getSections()[index];
   }
 
-  public SectionHeader getSection(String name)
+  public List<SectionHeader> getSections(String name)
   {
-    return getSectionTable().get(name);
+    List<SectionHeader> result = getSectionTable().getOrDefault(name,
+      new ArrayList<>(Collections.emptyList()));
+    return Collections.unmodifiableList(result);
   }
 
   public DataDirectory[] getDataDirectories()
@@ -151,6 +150,19 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
   public ExportDirectory getExportDirectory()
   {
     return exportDirectory_;
+  }
+
+  public boolean hasImportDirectories()
+  {
+    return (importDirectories_ != null && importDirectories_.length > 0);
+  }
+
+  public boolean hasValidImportDirectories()
+  {
+    return (hasImportDirectories() &&
+      Arrays.stream(importDirectories_)
+        .allMatch(ImportDirectory::isValid)
+      );
   }
 
   public ImportDirectory[] getImportDirectories()
@@ -208,13 +220,21 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     return sectionHeaders;
   }
 
-  private static HashMap<String, SectionHeader> loadSectionTable(
+  private static HashMap<String, List<SectionHeader>> loadSectionTable(
     SectionHeader[] sections)
   {
-    HashMap<String, SectionHeader> sectionTable = new HashMap<>();
+    HashMap<String, List<SectionHeader>> sectionTable = new HashMap<>();
     for (SectionHeader section : sections)
     {
-      sectionTable.put(section.getName(), section);
+      if (sectionTable.containsKey(section.getName()))
+      {
+        sectionTable.get(section.getName()).add(section);
+      }
+      else
+      {
+        sectionTable.put(section.getName(),
+          new ArrayList<>(Arrays.asList(section)));
+      }
     }
 
     return sectionTable;

@@ -17,7 +17,7 @@ class EntropyScoreTests
     HashMap<String, Double> entropyMap = new HashMap<>();
     for (SectionHeader section : peFile.getSections())
     {
-      ShannonEntropy entropy = getSectionEntropy(peFile, section.getName());
+      ShannonEntropy entropy = getSectionEntropy(peFile, section);
       System.out.println(new EntropyScore(section.getName() + " entropy",
         peFile, section.getRVA().getFilePosition(),
         section.getSizeOfRawData()));
@@ -116,10 +116,9 @@ class EntropyScoreTests
   }
 
   private static ShannonEntropy getSectionEntropy(
-    PortableExecutableFileChannel peFile, String sectionName)
+    PortableExecutableFileChannel peFile, SectionHeader section)
     throws IOException, EndOfStreamException
   {
-    SectionHeader section = peFile.getSection(sectionName);
     RelativeVirtualAddress rva = section.getRVA();
     long readPos = rva.getFilePosition();
     int readLen = section.getSizeOfRawData();

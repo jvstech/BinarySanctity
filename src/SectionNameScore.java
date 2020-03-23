@@ -38,7 +38,7 @@ public class SectionNameScore extends Score
   @Override
   public String getTitle()
   {
-    return "Section name";
+    return "Name";
   }
 
   @Override
@@ -64,7 +64,7 @@ public class SectionNameScore extends Score
   {
     if (StringUtil.isWhiteSpace(section_.getName()))
     {
-      setValue(100);
+      setValue(500);
       return "Empty/whitespace-only section name";
     }
 
@@ -77,23 +77,23 @@ public class SectionNameScore extends Score
           section_.getRVA().getFilePosition(), section_.getSizeOfRawData());
         if (entropyScore.isSoftMalwareIndication())
         {
-          setValue(150);
+          setValue(750);
           addDetail(String.format("Entropy: %.2f (%d)",
             entropyScore.getEntropyValue(), entropyScore.getValue()));
           return entry.getValue() + " with high entropy";
         }
         else
         {
-          setValue(100);
+          setValue(700);
           return entry.getValue() + " packed";
         }
       }
     }
 
     if (!StringUtil.isMatch(section_.getName(),
-      "^[_\\.]*[a-zA-Z0-9\\$]+", true))
+      "^[_\\.]*[a-zA-Z0-9_\\.\\$]+", true))
     {
-      setValue(50);
+      setValue(250);
       return "uncommon section name with unusual characters";
     }
 
@@ -110,8 +110,32 @@ public class SectionNameScore extends Score
   private static HashMap<Pattern, String> getPackedSectionPatterns()
   {
     final HashMap<Pattern, String> packerPatterns = new HashMap<>();
-    packerPatterns.put(Pattern.compile("^[_\\.]UPX\\d*$"), "UPX");
+    packerPatterns.put(Pattern.compile("^[_\\.]*UPX[\\d!]*$"), "UPX");
     packerPatterns.put(Pattern.compile("^SR$"), "Armadillo");
+    packerPatterns.put(Pattern.compile("^\\.*aspack$",
+      Pattern.CASE_INSENSITIVE), "Aspack");
+    packerPatterns.put(Pattern.compile("^\\.adata$"),
+      "Aspack/Armadillo");
+    packerPatterns.put(Pattern.compile("^\\.*MaskPE$"), "MaskPE");
+    packerPatterns.put(Pattern.compile("^\\.*ccg"), "CCG");
+    packerPatterns.put(Pattern.compile("^pebundle$",
+      Pattern.CASE_INSENSITIVE), "PEBundle");
+    packerPatterns.put(Pattern.compile("^\\.*nsp\\d*$"), "NsPack");
+    packerPatterns.put(Pattern.compile("^\\.MPRESS\\d*$"), "Mpress");
+    packerPatterns.put(Pattern.compile("^pec\\d+|PEC\\d|PEC2[TM]O$"),
+      "PECompact");
+    packerPatterns.put(Pattern.compile("^\\.*perplex$"), "Perplex PE-Protector");
+    packerPatterns.put(Pattern.compile("^\\.*petite$"), "Petite");
+    packerPatterns.put(Pattern.compile("^\\.*RPCrypt|RCryptor$"),
+      "RPCrypt");
+    packerPatterns.put(Pattern.compile("^\\.spack$"), "Simple Pack");
+    packerPatterns.put(Pattern.compile("^\\.svkp$"), "SVKP");
+    packerPatterns.put(Pattern.compile("^\\.*Themida$"), "Themida");
+    packerPatterns.put(Pattern.compile("^\\.tsu(?:arch|stub)$"),
+      "TSULoader");
+    packerPatterns.put(Pattern.compile("^\\.Upack|\\.ByDwing$"), "Upack");
+    packerPatterns.put(Pattern.compile("^\\.vmp\\d*$"), "VMProtect");
+
     return packerPatterns;
   }
 

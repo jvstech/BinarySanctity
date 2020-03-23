@@ -14,9 +14,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class ConsoleCommands
 {
+  @FunctionalInterface
+  private interface PEFilePathHandler
+  {
+    void accept(String filePath)
+      throws IOException, EndOfStreamException, BadExecutableFormatException;
+  }
+
   private static int exitCode_ = 0;
 
   public static int getExitCode()
@@ -51,12 +62,109 @@ public class ConsoleCommands
       case "sectionNames":
         exitCode_ = showSectionNames(nextArgs);
         return true;
+      case "imports":
+        exitCode_ = showImports(nextArgs);
+        return true;
     }
 
     return false;
   }
 
   public static int showSectionNames(String[] args)
+  {
+    PEFilePathHandler handler = filePath ->
+    {
+      PortableExecutableFileChannel peFile =
+        PortableExecutableFileChannel.create(filePath);
+      System.out.println(filePath + ":");
+      for (SectionHeader section : peFile.getSections())
+      {
+        System.out.printf("  \"%s\" %s\n",
+          StringUtil.escapeFull(section.getName()),
+          SectionCharacteristicTypes.getStrings(
+            SectionCharacteristicTypes.getWithoutAlignments(
+              section.getCharacteristics())));
+      }
+    };
+
+    return forEachFile(args, handleDirWalkPEFilePath(handler),
+      handlePEFilePath(handler));
+  }
+
+  public static int showImports(String[] args)
+  {
+    PEFilePathHandler handler = filePath ->
+    {
+      PortableExecutableFileChannel peFile =
+        PortableExecutableFileChannel.create(filePath);
+      System.out.println(filePath + ":");
+      for (Map.Entry<String, String[]> imports :
+        peFile.getImportedNames().entrySet())
+      {
+        for (String importFunc : imports.getValue())
+        {
+          System.out.printf("  %s!%s\n", imports.getKey(), importFunc);
+        }
+      }
+
+      System.out.println();
+    };
+
+    return forEachFile(args, handleDirWalkPEFilePath(handler),
+      handlePEFilePath(handler));
+  }
+
+  private static Consumer<? super String> handleDirWalkPEFilePath(
+    PEFilePathHandler handler)
+  {
+    return filePath ->
+    {
+      try
+      {
+        handler.accept(filePath);
+      }
+      catch (IOException | EndOfStreamException |
+        BadExecutableFormatException e)
+      {
+        // do nothing; move to the next file
+      }
+    };
+  }
+
+  private static Function<? super String, ? extends Boolean> handlePEFilePath(
+    PEFilePathHandler handler)
+  {
+    return filePath ->
+    {
+      try
+      {
+        handler.accept(filePath);
+      }
+      catch (IOException e)
+      {
+        System.err.println(filePath + ": I/O error while reading: " +
+          e.getMessage());
+        return false;
+      }
+      catch (EndOfStreamException e)
+      {
+        System.err.println(filePath + ": reached premature end-of-file.");
+        return false;
+      }
+      catch (BadExecutableFormatException e)
+      {
+        System.err.println(filePath +
+          ": bad executable format/not an executable");
+        return false;
+      }
+
+      return true;
+    };
+  }
+
+  private static int forEachFile(String[] args,
+    Consumer<? super String> dirWalkConsumer,
+    Function<? super String, ? extends Boolean> argFileConsumer)
   {
     ArrayList<String> fileList = new ArrayList<>();
     for (String arg : args)
@@ -71,34 +179,12 @@ public class ConsoleCommands
       {
         try
         {
-           Files.walk(Paths.get(arg))
+          Files.walk(Paths.get(arg))
             .filter(Files::isRegularFile)
             .filter(Files::isReadable)
             .map(Path::toAbsolutePath)
             .map(Path::toString)
-            .forEach(filePath ->
-            {
-              try
-              {
-                PortableExecutableFileChannel peFile =
-                  PortableExecutableFileChannel.create(filePath);
-                System.out.println(filePath + ":");
-                for (SectionHeader section : peFile.getSections())
-                {
-                  System.out.printf("  \"%s\" %s\n",
-                    StringUtil.escapeFull(section.getName()),
-                    SectionCharacteristicTypes.getStrings(
-                      SectionCharacteristicTypes.getWithoutAlignments(
-                        section.getCharacteristics())));
-                }
-              }
-              catch (IOException | EndOfStreamException |
-                BadExecutableFormatException e)
-              {
-                // do nothing; move to the next file
-                //e.printStackTrace();
-              }
-            });
+            .forEach(dirWalkConsumer);
         }
         catch (IOException e)
         {
@@ -112,44 +198,19 @@ public class ConsoleCommands
       }
     }
 
-    boolean hadErrors = false;
-    for (String filePath : fileList)
-    {
-      if (Files.exists(Paths.get(filePath)))
-      {
-        try
-        {
-          PortableExecutableFileChannel peFile =
-            PortableExecutableFileChannel.create(filePath);
-          System.out.println(filePath + ":");
-          for (SectionHeader section : peFile.getSections())
-          {
-            System.out.printf("  %s %s\n", section,
-              SectionCharacteristicTypes.getStrings(
-                SectionCharacteristicTypes.getWithoutAlignments(
-                  section.getCharacteristics())));
-          }
-        }
-        catch (IOException e)
-        {
-          hadErrors = true;
-          System.err.println(filePath + ": I/O error while reading: " +
-            e.getMessage());
-        }
-        catch (EndOfStreamException e)
-        {
-          hadErrors = true;
-          System.err.println(filePath + ": reached premature end-of-file.");
-        }
-        catch (BadExecutableFormatException e)
-        {
-          hadErrors = true;
-          System.err.println(filePath +
-            ": bad executable format/not an executable");
-        }
-      }
-    }
+    boolean success = fileList.stream()
+      .filter(f -> Files.exists(Paths.get(f)))
+      .map(argFileConsumer)
+      .map(Boolean::booleanValue)
+      .reduce((e1, e2) -> e1 & e2)
+      .orElse(true);
+    return (success ? 0 : 1);
+  }
 
-    return (hadErrors ? 1 : 0);
+  private static int forEachFile(String[] args,
+    Consumer<? super String> filePathConsumer)
+  {
+    return forEachFile(args, filePathConsumer,
+      f -> { filePathConsumer.accept(f); return true; });
   }
 }

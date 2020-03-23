@@ -8,7 +8,6 @@
 //!
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class PortableExecutableScore extends AggregateScore
 {
@@ -19,8 +18,19 @@ public class PortableExecutableScore extends AggregateScore
     throws IOException, EndOfStreamException
   {
     indicatorThreshold_ = indicatorThreshold;
-    add(new MissingGUIImportsScore(peFile));
-    add(new SuspiciousImportsScore(peFile));
+    if (!peFile.hasValidImportDirectories())
+    {
+      // Something that goes out of its way to not have any imports despite
+      // otherwise being a valid executable file can only be described as
+      // malware.
+      add(new GenericScore(3000,"Invalid/missing import directory"));
+    }
+    else
+    {
+      add(new MissingGUIImportsScore(peFile));
+      add(new SuspiciousImportsScore(peFile));
+    }
+
     // Section scores
     add(new ExecutableSectionCountScore(peFile));
     for (SectionHeader section : peFile.getSections())
@@ -28,9 +38,14 @@ public class PortableExecutableScore extends AggregateScore
       add(new SectionScore(section));
     }
 
-    // #TODO: Check for the following things:
-    //    * multiple sections with the same names
-    //    * sections with non-alphanumeric characters (excluding . _ $)
+    add(new DuplicateSectionNameScore(peFile));
+
+    // Strings-related scores
+    add(new StringImportsScore(peFile));
+
+    // #TODO:
+    //    * valid entry point
+    //    * DLL-indicated characteristic type without a DllMain export
   }
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile)

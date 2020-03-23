@@ -22,7 +22,7 @@ public class SuspiciousImportsScore extends Score
         new String[][]
           {
             {
-              "CreateRemoteThread",
+              "CreateRemoteThread|NtCreateThreadEx|RtlCreateUserThread",
               "WriteProcessMemory"
             }
           },
@@ -79,7 +79,7 @@ public class SuspiciousImportsScore extends Score
         new String[][]
           {
             {
-              "CreateProcess(?:Ex)?[AW]|NtCreateUserProcess",
+              "(?:Nt)?CreateProcess(?:Ex)?[AW]?|NtCreateUserProcess",
               "NtUmapViewOfSection",
               "VirtualAllocEx|NtAllocateVirtualMemory",
               "(?:Nt)?WriteProcessMemory",

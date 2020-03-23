@@ -62,31 +62,48 @@ public class ImportDirectory implements Header
         rva_.toDiagnosticString(peFile_)));
     }
 
-    long pos = relpos(Offsets.IMPORT_LOOKUP_TABLE_RVA.position);
-    if (DataUtil.isInBounds(pos, peFile_))
+    long iltRvaPos = relpos(Offsets.IMPORT_LOOKUP_TABLE_RVA.position);
+    if (DataUtil.isInBounds(iltRvaPos, peFile_))
     {
-      importLookupTableRVA_ = new RelativeVirtualAddress(peFile_.readInt32(pos),
-        peFile_.getSections());
+      int iltRva = peFile_.readInt32(iltRvaPos);
+      importLookupTableRVA_ =
+        new RelativeVirtualAddress(iltRva, peFile_.getSections());
       if (!importLookupTableRVA_.isValid(peFile_))
       {
-        valid_ = false;
-        parseErrors_.add(String.format("Import lookup table file position is " +
-          "out of bounds. (%s)",
-          importLookupTableRVA_.toDiagnosticString(peFile_)));
+        // If the ILT isn't valid, the IAT *should* be valid (at least, on
+        // disk). The IAT is a clone of the ILT until its functions are mapped
+        // in by the loader. If the IAT isn't valid, there is something very
+        // wrong with the executable.
+        boolean isILTValid = false;
+        iltRvaPos = relpos(Offsets.IMPORT_ADDRESS_TABLE_RVA.position);
+        if (DataUtil.isInBounds(iltRvaPos, peFile_))
+        {
+          importLookupTableRVA_ =
+            new RelativeVirtualAddress(iltRva, peFile_.getSections());
+          isILTValid = importLookupTableRVA_.isValid(peFile_);
+        }
+
+        if (!isILTValid)
+        {
+          valid_ = false;
+          parseErrors_.add(String.format("Import lookup table file position is " +
+              "out of bounds. (%s)",
+            importLookupTableRVA_.toDiagnosticString(peFile_)));
+        }
       }
     }
     else
     {
       valid_ = false;
       parseErrors_.add(String.format("Import lookup table RVA offset is out " +
-        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+        "of bounds. (pos: %d; size: %d)", iltRvaPos, peFile_.size()));
     }
 
-    pos = relpos(Offsets.NAME_RVA.position);
-    if (DataUtil.isInBounds(pos, peFile_))
+    long nameRvaPos = relpos(Offsets.NAME_RVA.position);
+    if (DataUtil.isInBounds(nameRvaPos, peFile_))
     {
-      nameRVA_ = new RelativeVirtualAddress(peFile_.readInt32(pos),
-        peFile_.getSections());
+      int nameRva = peFile_.readInt32(nameRvaPos);
+      nameRVA_ = new RelativeVirtualAddress(nameRva, peFile_.getSections());
       if (!nameRVA_.isValid(peFile_))
       {
         valid_ = false;
@@ -99,16 +116,15 @@ public class ImportDirectory implements Header
     {
       valid_ = false;
       parseErrors_.add(String.format("Import library name RVA offset is out " +
-        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+        "of bounds. (pos: %d; size: %d)", nameRvaPos, peFile_.size()));
     }
 
-
-    pos = relpos(Offsets.IMPORT_ADDRESS_TABLE_RVA.position);
-    if (DataUtil.isInBounds(pos, peFile_))
+    long iatRvaPos = relpos(Offsets.IMPORT_ADDRESS_TABLE_RVA.position);
+    if (DataUtil.isInBounds(iatRvaPos, peFile_))
     {
+      int iatRva = peFile_.readInt32(iatRvaPos);
       importAddressTableRVA_ =
-        new RelativeVirtualAddress(peFile_.readInt32(pos),
-          peFile_.getSections());
+        new RelativeVirtualAddress(iatRva, peFile_.getSections());
       if (!importAddressTableRVA_.isValid(peFile_))
       {
         valid_ = false;
@@ -121,12 +137,20 @@ public class ImportDirectory implements Header
     {
       valid_ = false;
       parseErrors_.add(String.format("Import address table RVA offset is out " +
-        "of bounds. (pos: %d; size: %d)", pos, peFile_.size()));
+        "of bounds. (pos: %d; size: %d)", iatRvaPos, peFile_.size()));
+    }
+
+    if (nameRVA_.isValid(peFile))
+    {
+      name_ = peFile_.readCString(nameRVA_.getFilePosition());
+    }
+    else
+    {
+      name_ = null;
     }
 
     if (isValid())
     {
-      name_ = peFile_.readCString(nameRVA_.getFilePosition());
       ArrayList<ImportLookup> ilt = new ArrayList<>();
       for (int i = 0; /* no condition */; i++)
       {

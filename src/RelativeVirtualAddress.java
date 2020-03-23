@@ -106,7 +106,8 @@ public class RelativeVirtualAddress
 
   public boolean isValid(long fileSize)
   {
-    return (DataUtil.isInBounds(getFilePosition(), fileSize));
+    return (DataUtil.isInBounds(getFilePosition(), fileSize) &&
+      section_ != null);
   }
 
   public boolean isValid(FileChannel fileChannel)

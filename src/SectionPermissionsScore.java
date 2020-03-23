@@ -33,7 +33,7 @@ public class SectionPermissionsScore extends Score
   @Override
   public String getTitle()
   {
-    return "Section permissions";
+    return "Permissions";
   }
 
   @Override
@@ -62,7 +62,7 @@ public class SectionPermissionsScore extends Score
     boolean hasBadPermissions = ((characteristics_ & WX) == WX);
     if (hasBadPermissions)
     {
-      setValue(50);
+      setValue(500);
       return "write + execute permissions";
     }
 
@@ -79,7 +79,7 @@ public class SectionPermissionsScore extends Score
         if ((characteristics_ & expected) == 0)
         {
           // characteristics are completely different than expected
-          setValue(25);
+          setValue(100);
           return "exclusively differing characteristics for reserved section";
         }
         else
