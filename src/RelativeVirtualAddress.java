@@ -65,6 +65,27 @@ public class RelativeVirtualAddress
     this(section.getVirtualAddress(), section, sectionIndex);
   }
 
+  public boolean equals(RelativeVirtualAddress rva)
+  {
+    return (value_ == rva.value_);
+  }
+
+  @Override
+  public boolean equals(Object o)
+  {
+    if (o == this)
+    {
+      return true;
+    }
+
+    if (!(o instanceof RelativeVirtualAddress))
+    {
+      return false;
+    }
+
+    return equals((RelativeVirtualAddress)o);
+  }
+
   public int getValue()
   {
     return value_;
