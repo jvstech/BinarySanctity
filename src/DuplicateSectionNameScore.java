@@ -9,6 +9,8 @@
 
 public class DuplicateSectionNameScore extends Score
 {
+  public static final String TITLE = "Duplicate section names";
+
   public DuplicateSectionNameScore(PortableExecutableFileChannel peFile)
   {
     if (peFile == null)
@@ -32,7 +34,7 @@ public class DuplicateSectionNameScore extends Score
   @Override
   public String getTitle()
   {
-    return "Duplicate section names";
+    return TITLE;
   }
 
   @Override

@@ -49,10 +49,9 @@ public class Help
 
   public static void about()
   {
-    Color bgColor = Color.rgb(60, 63, 65);
     VBox layout = new VBox(5);
     layout.setPadding(new Insets(5));
-    layout.setStyle("-fx-background-color: #3C3F41;");
+    //UIView.stylizeContainer(layout);
     layout.setAlignment(Pos.CENTER);
 
     // Logo image
@@ -66,24 +65,25 @@ public class Help
 
     // Info text
     TextArea aboutText = new TextArea();
+    aboutText.getStyleClass().add("mono-text");
     aboutText.setEditable(false);
     aboutText.setText(ABOUT_TEXT);
-    aboutText.setFont(Font.font("Monospace", 14.0));
-    aboutText.setStyle("-fx-control-inner-background: #3C3F41;");
     aboutText.setWrapText(true);
     layout.getChildren().add(aboutText);
 
     // OK button
     Button okButton = new Button("OK");
+    //UIView.stylizeButton(okButton);
     okButton.setOnAction(e -> okButton.getScene().getWindow().hide());
     layout.getChildren().add(okButton);
 
     VBox.setVgrow(aboutText, Priority.ALWAYS);
     Scene scene = new Scene(layout, 640, 480);
+    UIView.stylize(scene);
     Stage stage = new Stage();
     stage.setTitle("Binary Sanctity");
     stage.setScene(scene);
-    stage.show();
+    stage.showAndWait();
   }
 
   private static final String logoImageBase64String =

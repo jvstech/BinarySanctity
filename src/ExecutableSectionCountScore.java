@@ -13,6 +13,7 @@ import java.util.List;
 
 public class ExecutableSectionCountScore extends Score
 {
+  public static final String TITLE = "Executable section score";
   List<SectionHeader> executableSections_ = new ArrayList<>();
 
   public ExecutableSectionCountScore(PortableExecutableFileChannel peFile)
@@ -50,7 +51,7 @@ public class ExecutableSectionCountScore extends Score
   @Override
   public String getTitle()
   {
-    return "Executable section score";
+    return TITLE;
   }
 
   @Override

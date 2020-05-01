@@ -184,6 +184,8 @@ public class SuspiciousImportsScore extends Score
         )
       );
 
+  public static final String TITLE = "Suspicious imports";
+
   private final PortableExecutableFileChannel peFile_;
 
   public SuspiciousImportsScore(PortableExecutableFileChannel peFile)
@@ -196,7 +198,7 @@ public class SuspiciousImportsScore extends Score
   @Override
   public String getTitle()
   {
-    return "Suspicious Imports";
+    return TITLE;
   }
 
   @Override

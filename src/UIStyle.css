@@ -1,0 +1,168 @@
+/* Custom classes and IDs */
+
+.score-item-malware
+{
+    -fx-font-weight: bold;
+    -fx-text-fill: red;
+}
+
+.score-item-path
+{
+    -fx-font-weight: bold;
+    -fx-text-fill: rgba(255,255,255,0.4);
+}
+
+.score-item-value
+{
+    -fx-font-size: 14pt;
+    -fx-font-weight: bold;
+    -fx-max-width: 96px;
+    -fx-min-width: 96px;
+}
+
+.mono-text
+{
+    -fx-font-family: Monospaced;
+    -fx-font-size: 11pt;
+}
+
+.status-bar
+{
+    -fx-padding: 2px;
+}
+
+.status-label
+{
+    -fx-border-color: #2B2B2B #2B2B2B #4C5052 #4C5052;
+    -fx-max-width: infinity;
+    -fx-label-padding: 2 5 2 5;
+    -fx-border-radius: 3px;
+}
+
+#analyze-text-checkbox
+{
+    -fx-padding: 10;
+}
+
+/* Control types */
+
+Scene, HBox, VBox, ListView, SplitPane, TabPane, ListCell, Label, CheckBox
+{
+    -fx-background-color: #3C3F41;
+    -fx-text-fill: white;
+}
+
+TextArea
+{
+    -fx-control-inner-background: #3C3F41;
+    -fx-text-fill: white;
+}
+
+/* Button */
+
+.button
+{
+    -fx-background-color: #4C5052;
+    -fx-background-radius: 3px;
+    -fx-border-color: #4C5052;
+    -fx-font-weight: bold;
+    -fx-text-fill: #BABAA7;
+    -fx-border-radius: 3px;
+}
+
+.button:hover, .button:pressed
+{
+    -fx-background-color: #365880;
+}
+
+.button:hover
+{
+    -fx-border-color: #365880;
+}
+
+.button:pressed
+{
+    -fx-background-insets: 3px;
+    -fx-border-color: -fx-focus-color;
+}
+
+/* ListView */
+
+.list-cell, .list-cell *
+{
+    -fx-background-color: #3C3F41;
+    -fx-border-color: #3C3F41;
+    -fx-padding: 2px;
+}
+
+.list-cell:selected
+{
+    -fx-border-color: #4C708C;
+}
+
+/* SplitPane */
+
+.split-pane *.split-pane-divider
+{
+    -fx-background-color: #4C5052;
+}
+
+/* TabPane */
+
+.tab-pane *.tab-content-area
+{
+    -fx-background-color: #3C3F41;
+    -fx-text-fill: white;
+    -fx-border-color: #4C5052;
+}
+
+.tab
+{
+    -fx-border-radius: 3px;
+    -fx-background-color: #3C3F41;
+    -fx-text-fill: white;
+    -fx-border-color: #4C5052;
+}
+
+.tab:selected, .tab:selected *.tab-label
+{
+    -fx-background-color: #4C5052;
+}
+
+.tab:focused
+{
+    -fx-border-radius: 3px;
+}
+
+/* ProgressBar */
+
+.progress-bar, .progress-bar *.track
+{
+    -fx-background-color: #4C5052;
+    -fx-background-radius: 2px;
+    -fx-border-radius: 2px;
+}
+
+/* ScrollBar */
+
+.scroll-bar, .scroll-bar *.track
+{
+    -fx-background-color: #3C3F41;
+}
+
+.scroll-bar *.thumb
+{
+    -fx-background-color: #4C5052;
+}
+
+.scroll-bar *.thumb:hover,
+.scroll-bar *.thumb:pressed
+{
+    -fx-background-color: #565656;
+}
+
+.scroll-bar *.increment-arrow,
+.scroll-bar *.decrement-arrow
+{
+    -fx-shape: " ";
+}

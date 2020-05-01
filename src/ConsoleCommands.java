@@ -35,12 +35,20 @@ public class ConsoleCommands
     return exitCode_;
   }
 
-  public static boolean handle(String[] args)
+  // This function returns true if an argument was handled by a console command
+  // handler, or false if otherwise. A return of false means regular malware
+  // scoring should occur.
+  public static boolean handle(String[] cmdLineArgs)
   {
-    if (args == null || args.length == 0)
+    if (cmdLineArgs == null || cmdLineArgs.length == 0)
     {
       return false;
     }
+
+    // Strip out the "-console" argument if one was present.
+    String[] args = Arrays.stream(cmdLineArgs)
+      .filter(a -> !a.equals("-console"))
+      .toArray(String[]::new);
 
     if (!args[0].startsWith("-"))
     {
@@ -53,6 +61,8 @@ public class ConsoleCommands
       return false;
     }
 
+    // The first argument is the "command" argument. Extract it and build a new
+    // array containing the remaining arguments.
     String commandArg = args[0].substring(1);
     String[] nextArgs = Arrays.stream(args)
       .skip(1)

@@ -11,9 +11,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Strings
 {
+  private static final int FIND_READ_SIZE = 4096;
+  private static final int FIND_BUFFER_SIZE = FIND_READ_SIZE * 2;
   // Reads printable ASCII strings from a file buffer.
   // This function has the potential to use up a LOT of memory as it generates
   // copies of all the strings found in the data. None of the strings are
@@ -46,14 +49,30 @@ public class Strings
 
   // Finds the offsets and lengths of every printable string in a file. Returns
   // an array of two-element long values (0 = offset, 1 = length).
-  public static Long[][] findOffsets(FileChannel file, int minSize)
+  public static Long[][] findOffsets(FileChannel file, int minSize,
+    Consumer<Integer> progressCallback)
   {
     List<Long[]> offsets = new ArrayList<>();
-    ByteBuffer bytes = ByteBuffer.allocate(8192).order(ByteOrder.LITTLE_ENDIAN);
+    ByteBuffer bytes = ByteBuffer.allocate(FIND_BUFFER_SIZE)
+      .order(ByteOrder.LITTLE_ENDIAN);
     ReadOnlyBinaryFileChannel data = new ReadOnlyBinaryFileChannel(file);
+
+    long fileSize = -1;
+    try
+    {
+      if (progressCallback != null)
+      {
+        fileSize = file.size();
+      }
+    }
+    catch (IOException e)
+    {
+      // Can't retrieve file size; no worries, just can't report progress.
+    }
 
     try
     {
+      int currentPercent = 0;
       long pos = file.position();
       int bytesRead;
       long startIdx = -1;
@@ -61,9 +80,11 @@ public class Strings
 
       while ((bytesRead = file.read(bytes, pos)) > 0)
       {
-        // Read 8K into the buffer, but only process 4K at a time for overlapped
+        // Read into the buffer, but only process half at a time for overlapped
         // reading.
-        for (int idx = 0; idx < (bytesRead < 4096 ? bytesRead : 4096); ++idx)
+        for (int idx = 0;
+             idx < (bytesRead < FIND_READ_SIZE ? bytesRead : FIND_READ_SIZE);
+             ++idx)
         {
           int curByte = data.readUInt8(pos + idx);
           if (isPrintableASCII(curByte))
@@ -85,9 +106,20 @@ public class Strings
             length = 0;
             startIdx = -1;
           }
+
+          if (fileSize > 0 && progressCallback != null)
+          {
+            int progressPercent =
+              (int)(((pos + idx) * 200 + fileSize) / (fileSize * 2));
+            if (currentPercent != progressPercent)
+            {
+              progressCallback.accept(progressPercent);
+              currentPercent = progressPercent;
+            }
+          }
         }
 
-        pos += 4096;
+        pos += FIND_READ_SIZE;
         bytes.clear();
       }
     }
@@ -106,7 +138,18 @@ public class Strings
 
   public static Long[][] findOffsets(FileChannel file)
   {
-    return findOffsets(file, 5);
+    return findOffsets(file, 5, null);
+  }
+
+  public static Long[][] findOffsets(FileChannel file, int minSize)
+  {
+    return findOffsets(file, minSize, null);
+  }
+
+  public static Long[][] findOffsets(FileChannel file,
+    Consumer<Integer> progressCallback)
+  {
+    return findOffsets(file, 5, progressCallback);
   }
 
   public static boolean isPrintableASCII(int b)

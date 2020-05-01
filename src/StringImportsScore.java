@@ -9,15 +9,21 @@
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class StringImportsScore extends Score
 {
-  public StringImportsScore(PortableExecutableFileChannel peFile)
+
+  public static final String TITLE = "String imports";
+
+  public StringImportsScore(PortableExecutableFileChannel peFile,
+    Consumer<Integer> progressCallback)
     throws IOException, EndOfStreamException
   {
     int score = 0;
-    Long[][] stringOffsets = Strings.findOffsets(peFile, 4);
+    Long[][] stringOffsets =
+      Strings.findOffsets(peFile, 4, progressCallback);
     if (stringOffsets.length > 0)
     {
       Set<String> importedLibs = peFile.getImportedNames().keySet();
@@ -79,10 +85,16 @@ public class StringImportsScore extends Score
     setValue(score);
   }
 
+  public StringImportsScore(PortableExecutableFileChannel peFile)
+    throws IOException, EndOfStreamException
+  {
+    this(peFile, null);
+  }
+
   @Override
   public String getTitle()
   {
-    return "String imports";
+    return TITLE;
   }
 
   @Override

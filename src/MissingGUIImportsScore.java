@@ -12,6 +12,8 @@ import java.util.Arrays;
 
 public class MissingGUIImportsScore extends Score
 {
+  public static final String TITLE = "Missing GUI imports";
+
   public MissingGUIImportsScore(PortableExecutableFileChannel peFile)
     throws IOException, EndOfStreamException
   {
@@ -40,7 +42,7 @@ public class MissingGUIImportsScore extends Score
   @Override
   public String getTitle()
   {
-    return "Missing GUI imports";
+    return TITLE;
   }
 
   @Override

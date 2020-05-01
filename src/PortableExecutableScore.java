@@ -8,40 +8,60 @@
 //!
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public class PortableExecutableScore extends AggregateScore
 {
   private final double indicatorThreshold_;
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile,
-                                 double indicatorThreshold)
+                                 double indicatorThreshold,
+                                 Consumer<? super String> statusCallback)
     throws IOException, EndOfStreamException
   {
     indicatorThreshold_ = indicatorThreshold;
+    if (statusCallback == null)
+    {
+      // Ensure a callable, but empty callback consumer exists.
+      statusCallback = s -> {};
+    }
+
     if (!peFile.hasValidImportDirectories())
     {
       // Something that goes out of its way to not have any imports despite
       // otherwise being a valid executable file can only be described as
       // malware.
+      statusCallback.accept("Invalid/missing imports");
       add(new GenericScore(3000,"Invalid/missing import directory"));
     }
     else
     {
+      statusCallback.accept(MissingGUIImportsScore.TITLE);
       add(new MissingGUIImportsScore(peFile));
+      statusCallback.accept(SuspiciousImportsScore.TITLE);
       add(new SuspiciousImportsScore(peFile));
     }
 
     // Section scores
+    statusCallback.accept(ExecutableSectionCountScore.TITLE);
     add(new ExecutableSectionCountScore(peFile));
+    int sectionScoreCount = 0;
     for (SectionHeader section : peFile.getSections())
     {
+      statusCallback.accept(
+        String.format("Section score %d", ++sectionScoreCount));
       add(new SectionScore(section));
     }
 
+    statusCallback.accept(DuplicateSectionNameScore.TITLE);
     add(new DuplicateSectionNameScore(peFile));
 
     // Strings-related scores
-    add(new StringImportsScore(peFile));
+    statusCallback.accept(StringImportsScore.TITLE);
+    Consumer<? super String> finalStatusCallback = statusCallback;
+    add(new StringImportsScore(peFile,
+      p -> finalStatusCallback.accept(String.format("%s - %d%%",
+        StringImportsScore.TITLE, p))));
 
     // #TODO:
     //    * valid entry point
@@ -51,8 +71,23 @@ public class PortableExecutableScore extends AggregateScore
   public PortableExecutableScore(PortableExecutableFileChannel peFile)
     throws IOException, EndOfStreamException
   {
-    this(peFile, 0.5);
+    this(peFile, 0.5, s -> {});
   }
+
+  public PortableExecutableScore(PortableExecutableFileChannel peFile,
+    double indicatorThreshold)
+    throws IOException, EndOfStreamException
+  {
+    this(peFile, indicatorThreshold, s -> {});
+  }
+
+  public PortableExecutableScore(PortableExecutableFileChannel peFile,
+    Consumer<? super String> statusCallback)
+    throws IOException, EndOfStreamException
+  {
+    this(peFile, 0.5, statusCallback);
+  }
+
 
   @Override
   public int getValue()
