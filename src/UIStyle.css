@@ -44,17 +44,33 @@
     -fx-padding: 10;
 }
 
-/* Control types */
-
-Scene, HBox, VBox, ListView, SplitPane, TabPane, ListCell, Label, CheckBox
+.analysis-text
 {
-    -fx-background-color: #3C3F41;
-    -fx-text-fill: white;
+    -fx-text-box-border: transparent;
+    -fx-focus-color: transparent;
+    -fx-background-color: transparent;
+    -fx-font-size: 12pt;
 }
 
-TextArea
+.analysis-text .content
 {
-    -fx-control-inner-background: #3C3F41;
+    -fx-background-radius: 0;
+}
+
+/* Control types */
+
+CheckBox,
+GridPane,
+HBox,
+Label,
+ListCell,
+ListView,
+Scene,
+SplitPane,
+TabPane,
+VBox
+{
+    -fx-background-color: #3C3F41;
     -fx-text-fill: white;
 }
 
@@ -145,7 +161,11 @@ TextArea
 
 /* ScrollBar */
 
-.scroll-bar, .scroll-bar *.track
+.scroll-bar,
+.scroll-bar *.track,
+.scroll-bar *.filler,
+.scroll-bar *.corner,
+*.scroll-pane *.corner
 {
     -fx-background-color: #3C3F41;
 }
@@ -165,4 +185,11 @@ TextArea
 .scroll-bar *.decrement-arrow
 {
     -fx-shape: " ";
+}
+
+/* TextArea */
+.text-area
+{
+    -fx-control-inner-background: #3C3F41;
+    -fx-text-fill: white;
 }

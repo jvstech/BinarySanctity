@@ -73,7 +73,6 @@ public class Help
 
     // OK button
     Button okButton = new Button("OK");
-    //UIView.stylizeButton(okButton);
     okButton.setOnAction(e -> okButton.getScene().getWindow().hide());
     layout.getChildren().add(okButton);
 

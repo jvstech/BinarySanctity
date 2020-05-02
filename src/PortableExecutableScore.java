@@ -15,8 +15,8 @@ public class PortableExecutableScore extends AggregateScore
   private final double indicatorThreshold_;
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile,
-                                 double indicatorThreshold,
-                                 Consumer<? super String> statusCallback)
+    double indicatorThreshold, boolean allowSlowAnalysis,
+    Consumer<? super String> statusCallback)
     throws IOException, EndOfStreamException
   {
     indicatorThreshold_ = indicatorThreshold;
@@ -56,12 +56,15 @@ public class PortableExecutableScore extends AggregateScore
     statusCallback.accept(DuplicateSectionNameScore.TITLE);
     add(new DuplicateSectionNameScore(peFile));
 
-    // Strings-related scores
-    statusCallback.accept(StringImportsScore.TITLE);
-    Consumer<? super String> finalStatusCallback = statusCallback;
-    add(new StringImportsScore(peFile,
-      p -> finalStatusCallback.accept(String.format("%s - %d%%",
-        StringImportsScore.TITLE, p))));
+    if (allowSlowAnalysis)
+    {
+      // Strings-related scores
+      statusCallback.accept(StringImportsScore.TITLE);
+      Consumer<? super String> finalStatusCallback = statusCallback;
+      add(new StringImportsScore(peFile,
+        p -> finalStatusCallback.accept(String.format("%s - %d%%",
+          StringImportsScore.TITLE, p))));
+    }
 
     // #TODO:
     //    * valid entry point
@@ -71,23 +74,43 @@ public class PortableExecutableScore extends AggregateScore
   public PortableExecutableScore(PortableExecutableFileChannel peFile)
     throws IOException, EndOfStreamException
   {
-    this(peFile, 0.5, s -> {});
+    this(peFile, 0.5, true, null);
   }
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile,
     double indicatorThreshold)
     throws IOException, EndOfStreamException
   {
-    this(peFile, indicatorThreshold, s -> {});
+    this(peFile, indicatorThreshold, true, null);
   }
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile,
     Consumer<? super String> statusCallback)
     throws IOException, EndOfStreamException
   {
-    this(peFile, 0.5, statusCallback);
+    this(peFile, 0.5, true, statusCallback);
   }
 
+  public PortableExecutableScore(PortableExecutableFileChannel peFile,
+    boolean allowSlowAnalysis)
+    throws IOException, EndOfStreamException
+  {
+    this(peFile, 0.5, allowSlowAnalysis, null);
+  }
+
+  public PortableExecutableScore(PortableExecutableFileChannel peFile,
+    double indicatorThreshold, boolean allowSlowAnalysis)
+    throws IOException, EndOfStreamException
+  {
+    this(peFile, indicatorThreshold, allowSlowAnalysis, null);
+  }
+
+  public PortableExecutableScore(PortableExecutableFileChannel peFile,
+    boolean allowSlowAnalysis, Consumer<? super String> statusCallback)
+    throws IOException, EndOfStreamException
+  {
+    this(peFile, 0.5, allowSlowAnalysis, statusCallback);
+  }
 
   @Override
   public int getValue()

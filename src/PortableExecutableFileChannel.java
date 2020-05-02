@@ -74,6 +74,14 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     return create(new ReadOnlyBinaryFileChannel(data));
   }
 
+  public static PortableExecutableFileChannel fromBase64(String base64String)
+    throws EndOfStreamException, BadExecutableFormatException, IOException,
+      IllegalArgumentException
+  {
+    byte[] decodedData = Base64.getDecoder().decode(base64String);
+    return create(new ReadOnlyBinaryFileChannel(decodedData));
+  }
+
   public long getStartPosition()
   {
     return startPosition_;

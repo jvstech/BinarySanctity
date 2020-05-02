@@ -7,6 +7,7 @@
 //!                 window and controls for display and use.
 //!
 
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -168,6 +169,9 @@ public class UIView extends Stage
   // File ListView
   private ListView<ScoreItem> fileListView_;
 
+  // Malware score results text box
+  private TextArea malwareScoreText_;
+
   // Status bar
   private HBox statusBox_;
   private ProgressBar progressBar_;
@@ -210,20 +214,19 @@ public class UIView extends Stage
     return progressBar_;
   }
 
-  public String getStatusText()
+  public DoubleProperty progressProperty()
   {
-    return statusText_.getText();
-  }
-
-  public UIView setStatusText(String statusText)
-  {
-    statusText_.setText(statusText);
-    return this;
+    return progressBar_.progressProperty();
   }
 
   public StringProperty statusProperty()
   {
     return statusText_.textProperty();
+  }
+
+  public TextArea getMalwareScoreText()
+  {
+    return malwareScoreText_;
   }
 
   private void initComponents()
@@ -239,8 +242,6 @@ public class UIView extends Stage
 
     VBox.setVgrow(splitPane_, Priority.ALWAYS);
     scene_ = new Scene(layout_, WIDTH, HEIGHT);
-    //scene_.getStylesheets().add(
-    //  getClass().getResource("/UIStyle.css").toExternalForm());
     stylize(scene_);
     setTitle("Binary Sanctity");
     setScene(scene_);
@@ -255,19 +256,23 @@ public class UIView extends Stage
 
     // "Add File" button
     addFileButton_ = new Button("Add File");
-    addFileButton_.setOnAction(event -> UICommands.promptAndLoadFiles(this));
+    addFileButton_.setOnAction(event ->
+      UICommands.promptAndLoadFiles(this, analyzeTextCheckBox_.isSelected()));
     buttonBar_.getChildren().add(addFileButton_);
 
     // "Add Folder" button
     addFolderButton_ = new Button("Add Folder");
+    // #TODO: setOnAction
     buttonBar_.getChildren().add(addFolderButton_);
 
     // "Remove" button
     removeButton_ = new Button("Remove");
+    // #TODO: setOnAction
     buttonBar_.getChildren().add(removeButton_);
 
     // "Clear" button
     clearButton_ = new Button("Clear");
+    // #TODO: setOnAction
     buttonBar_.getChildren().add(clearButton_);
 
     // "Analyze text" checkbox (might as well put it here since it's part of the
@@ -282,7 +287,29 @@ public class UIView extends Stage
   {
     fileListView_ = new ListView<>();
     fileListView_.setCellFactory(param -> new ScoreItemListCell());
+    fileListView_.getSelectionModel().selectedItemProperty().addListener(
+      (observable, oldValue, newValue) ->
+        UICommands.selectScoreItem(this, newValue));
     splitPane_.getItems().add(0, fileListView_);
+  }
+
+  private void createMalwareScoreText(Tab tab)
+  {
+    malwareScoreText_ = new TextArea();
+    malwareScoreText_.getStyleClass().addAll("mono-text", "analysis-text");
+    malwareScoreText_.setEditable(false);
+    malwareScoreText_.setWrapText(false);
+    GridPane pane = new GridPane();
+    RowConstraints rowConstraints = new RowConstraints();
+    rowConstraints.setFillHeight(true);
+    rowConstraints.setVgrow(Priority.ALWAYS);
+    pane.getRowConstraints().add(rowConstraints);
+    ColumnConstraints columnConstraints = new ColumnConstraints();
+    columnConstraints.setFillWidth(true);
+    columnConstraints.setHgrow(Priority.ALWAYS);
+    pane.getColumnConstraints().add(columnConstraints);
+    pane.add(malwareScoreText_, 0,0);
+    tab.setContent(pane);
   }
 
   private void createSplitPane()
@@ -313,6 +340,7 @@ public class UIView extends Stage
 
     Tab scoreTab = new Tab("Malware Score");
     scoreTab.setClosable(false);
+    createMalwareScoreText(scoreTab);
     tabPane_.getTabs().add(scoreTab);
 
     Tab importsTab = new Tab("Imports");

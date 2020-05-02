@@ -9,9 +9,14 @@
 
 import javafx.concurrent.Task;
 import javafx.scene.control.ProgressBar;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -23,12 +28,15 @@ public class UICommands
   {
     private List<File> files_;
     private UIView view_;
+    private boolean allowSlowAnalysis_;
     private List<UIView.ScoreItem> scoreItems_;
 
-    public PromptAndLoadFilesTask(UIView view, List<File> files)
+    public PromptAndLoadFilesTask(UIView view, List<File> files,
+      boolean allowSlowAnalysis)
     {
       view_= view;
       files_ = files;
+      allowSlowAnalysis_ = allowSlowAnalysis;
     }
 
     public UIView getView()
@@ -39,6 +47,11 @@ public class UICommands
     public List<UIView.ScoreItem> getScoreItems()
     {
       return scoreItems_;
+    }
+
+    public boolean getAllowSlowAnalysis()
+    {
+      return allowSlowAnalysis_;
     }
 
     @Override
@@ -58,7 +71,7 @@ public class UICommands
           ++processedCount;
         }
 
-        results.add(readAndScoreExecutableFile(view_, f,
+        results.add(readAndScoreExecutableFile(view_, f, allowSlowAnalysis_,
           s -> updateMessage(String.format("Analyzing %s (%s)", f.getName(),
             s))));
       }
@@ -69,7 +82,7 @@ public class UICommands
     }
   }
 
-  public static void promptAndLoadFiles(UIView view)
+  public static void promptAndLoadFiles(UIView view, boolean allowSlowAnalysis)
   {
     FileChooser fileDialog = new FileChooser();
     fileDialog.setTitle("Add Executable File");
@@ -78,6 +91,8 @@ public class UICommands
         "Portable executable files",
         "*.exe", "*.dll", "*.ocx", "*.cpl", "*.drv", "*.acm", "*.ax",
         "*.efi", "*.mui", "*.scr", "*.sys", "*.tsp"),
+      new FileChooser.ExtensionFilter("Base64-encoded files",
+        "*.b64"),
       new FileChooser.ExtensionFilter("All files",
         "*.*", "*"));
     List<File> files = fileDialog.showOpenMultipleDialog(view);
@@ -99,7 +114,8 @@ public class UICommands
         view.getProgressBar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
       }
 
-      PromptAndLoadFilesTask task = new PromptAndLoadFilesTask(view, files);
+      PromptAndLoadFilesTask task =
+        new PromptAndLoadFilesTask(view, files, allowSlowAnalysis);
       task.setOnSucceeded(event ->
       {
         PromptAndLoadFilesTask loadFilesTask =
@@ -125,18 +141,28 @@ public class UICommands
     }
   }
 
+  public static void promptAndLoadFolder(UIView view, boolean allowSlowAnalysis)
+  {
+    DirectoryChooser folderDialog = new DirectoryChooser();
+    folderDialog.setTitle("Add Executable Files in Folder");
+    File folder = folderDialog.showDialog(view);
+    // #TODO
+  }
+
   public static UIView.ScoreItem readAndScoreExecutableFile(UIView view,
-    File file, Consumer<? super String> statusCallback)
+    File file, boolean allowSlowAnalysis,
+    Consumer<? super String> statusCallback)
   {
     String errorTitle = null;
     String errorMessage = null;
     UIView.ScoreItem scoreItem = null;
+    PortableExecutableFileChannel peFile = null;
+
     try
     {
-      PortableExecutableFileChannel peFile =
-        PortableExecutableFileChannel.create(file);
+      peFile = loadPortableExecutable(file);
       PortableExecutableScore score =
-        new PortableExecutableScore(peFile, statusCallback);
+        new PortableExecutableScore(peFile, allowSlowAnalysis, statusCallback);
       scoreItem = view.new ScoreItem(score, file.getAbsolutePath());
     }
     catch (IOException e)
@@ -173,5 +199,35 @@ public class UICommands
     }
 
     return scoreItem;
+  }
+
+  public static void selectScoreItem(UIView view, UIView.ScoreItem scoreItem)
+  {
+    view.getMalwareScoreText().setText(
+      scoreItem.getScore().toReportString(true));
+  }
+
+  private static PortableExecutableFileChannel loadPortableExecutable(File file)
+    throws IOException, EndOfStreamException, BadExecutableFormatException
+  {
+    PortableExecutableFileChannel peFile = null;
+    if (StringUtil.isMatch(file.getName(), ".*\\.[bB]64$"))
+    {
+      // Try to load this as base64 data.
+      try
+      {
+        Path filePath = Paths.get(file.getAbsoluteFile().toURI());
+        String encodedData = new String(Files.readAllBytes(filePath),
+          StandardCharsets.UTF_8);
+        peFile = PortableExecutableFileChannel.fromBase64(encodedData);
+      }
+      catch (IllegalArgumentException e)
+      {
+        // Not base64 encoded
+        peFile = PortableExecutableFileChannel.create(file);
+      }
+    }
+
+    return peFile;
   }
 }
