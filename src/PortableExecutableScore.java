@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 public class PortableExecutableScore extends AggregateScore
 {
   private final double indicatorThreshold_;
+  private final PortableExecutableFileChannel peFile_;
 
   public PortableExecutableScore(PortableExecutableFileChannel peFile,
     double indicatorThreshold, boolean allowSlowAnalysis,
@@ -26,6 +27,7 @@ public class PortableExecutableScore extends AggregateScore
       statusCallback = s -> {};
     }
 
+    peFile_ = peFile;
     if (!peFile.hasValidImportDirectories())
     {
       // Something that goes out of its way to not have any imports despite
@@ -110,6 +112,11 @@ public class PortableExecutableScore extends AggregateScore
     throws IOException, EndOfStreamException
   {
     this(peFile, 0.5, allowSlowAnalysis, statusCallback);
+  }
+
+  public PortableExecutableFileChannel getPEFile()
+  {
+    return peFile_;
   }
 
   @Override

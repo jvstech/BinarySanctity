@@ -34,7 +34,8 @@ public class Strings
       }
       catch (IOException e)
       {
-        // #TODO
+        // Not sure of anything better to do here. Can't read the string so
+        // just emit the error and continue on.
         e.printStackTrace();
       }
     }
@@ -78,7 +79,8 @@ public class Strings
       long startIdx = -1;
       int length = 0;
 
-      while ((bytesRead = file.read(bytes, pos)) > 0)
+      while (!Thread.currentThread().isInterrupted() &&
+        (bytesRead = file.read(bytes, pos)) > 0)
       {
         // Read into the buffer, but only process half at a time for overlapped
         // reading.
@@ -125,8 +127,7 @@ public class Strings
     }
     catch (IOException e)
     {
-      // #TODO
-      e.printStackTrace();
+      // Can't read for some reason, so just return what we have currently.
     }
     catch (EndOfStreamException e)
     {

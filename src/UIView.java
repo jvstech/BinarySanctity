@@ -8,23 +8,70 @@
 //!
 
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.geometry.Insets;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-
+import javafx.stage.WindowEvent;
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class UIView extends Stage
 {
+  // Nested class for combining an import name or ordinal with its associated
+  // library
+  public class ImportItem
+  {
+    private final SimpleStringProperty name_;
+    private final SimpleStringProperty library_;
+
+    public ImportItem(String name, String library)
+    {
+      name_ = new SimpleStringProperty(name);
+      library_ = new SimpleStringProperty(library);
+    }
+
+    public String getLibrary()
+    {
+      return library_.get();
+    }
+
+    public String getName()
+    {
+      return name_.get();
+    }
+
+    public StringProperty libraryProperty()
+    {
+      return library_;
+    }
+
+    public StringProperty nameProperty()
+    {
+      return name_;
+    }
+
+    @Override
+    public String toString()
+    {
+      return String.format("%s!%s", getLibrary(), getName());
+    }
+  }
+
   // Nested class for combining a PortableExecutableScore with an executable
   // file name as a ListView item
   public class ScoreItem
   {
+    private final ObservableList<ImportItem> importItems_;
     private PortableExecutableScore score_;
     private String filePath_;
     private String fileName_;
@@ -41,6 +88,25 @@ public class UIView extends Stage
       exception_ = null;
       errorTitle_ = null;
       errorMessage_ = null;
+
+      List<ImportItem> importItems = new ArrayList<>();
+      try
+      {
+        for (Map.Entry<String, String[]> imports :
+          score_.getPEFile().getImportedNames().entrySet())
+        {
+          for (String importName : imports.getValue())
+          {
+            importItems.add(new ImportItem(importName, imports.getKey()));
+          }
+        }
+      }
+      catch (EndOfStreamException | IOException e)
+      {
+        e.printStackTrace();
+      }
+
+      importItems_ = FXCollections.observableArrayList(importItems);
     }
 
     public ScoreItem(Exception ex, String errorTitle, String errorMessage,
@@ -52,6 +118,32 @@ public class UIView extends Stage
       exception_ = ex;
       errorTitle_ = errorTitle;
       errorMessage_ = errorMessage;
+      importItems_ = FXCollections.observableArrayList();
+    }
+
+    public String getErrorMessage()
+    {
+      return errorMessage_;
+    }
+
+    public String getErrorTitle()
+    {
+      return errorTitle_;
+    }
+
+    public Exception getException()
+    {
+      return exception_;
+    }
+
+    public String getFilePath()
+    {
+      return filePath_;
+    }
+
+    public ObservableList<ImportItem> getImportItems()
+    {
+      return importItems_;
     }
 
     public PortableExecutableScore getScore()
@@ -69,29 +161,9 @@ public class UIView extends Stage
       return "!";
     }
 
-    public String getFilePath()
-    {
-      return filePath_;
-    }
-
     public boolean hasException()
     {
       return (exception_ != null);
-    }
-
-    public Exception getException()
-    {
-      return exception_;
-    }
-
-    public String getErrorTitle()
-    {
-      return errorTitle_;
-    }
-
-    public String getErrorMessage()
-    {
-      return errorMessage_;
     }
 
     @Override
@@ -119,8 +191,10 @@ public class UIView extends Stage
       pathText_ = new Label();
       pathText_.getStyleClass().add("score-item-path");
       textLayout_ = new VBox(nameText_, pathText_);
+      textLayout_.setAlignment(Pos.CENTER_LEFT);
       content_ = new HBox(scoreText_, textLayout_);
       content_.setAlignment(Pos.CENTER_LEFT);
+      HBox.setHgrow(scoreText_, Priority.NEVER);
       HBox.setHgrow(textLayout_, Priority.ALWAYS);
     }
 
@@ -128,6 +202,7 @@ public class UIView extends Stage
     protected void updateItem(ScoreItem item, boolean empty)
     {
       super.updateItem(item, empty);
+      nameText_.getStyleClass().clear();
       if (item != null && !empty)
       {
         scoreText_.setText(String.format("%d", item.getScore().getValue()));
@@ -162,6 +237,7 @@ public class UIView extends Stage
   private Button addFolderButton_;
   private Button removeButton_;
   private Button clearButton_;
+  private Button cancelButton_;
 
   // "Analyze text" checkbox
   private CheckBox analyzeTextCheckBox_;
@@ -171,6 +247,9 @@ public class UIView extends Stage
 
   // Malware score results text box
   private TextArea malwareScoreText_;
+
+  // Imports TableView
+  private TableView<ImportItem> importsTableView_;
 
   // Status bar
   private HBox statusBox_;
@@ -194,9 +273,9 @@ public class UIView extends Stage
     return addFolderButton_;
   }
 
-  public Button getRemoveButton()
+  public Button getCancelButton()
   {
-    return removeButton_;
+    return cancelButton_;
   }
 
   public Button getClearButton()
@@ -209,9 +288,24 @@ public class UIView extends Stage
     return fileListView_;
   }
 
+  public TableView<ImportItem> getImportsTableView()
+  {
+    return importsTableView_;
+  }
+
+  public TextArea getMalwareScoreText()
+  {
+    return malwareScoreText_;
+  }
+
   public ProgressBar getProgressBar()
   {
     return progressBar_;
+  }
+
+  public Button getRemoveButton()
+  {
+    return removeButton_;
   }
 
   public DoubleProperty progressProperty()
@@ -224,34 +318,26 @@ public class UIView extends Stage
     return statusText_.textProperty();
   }
 
-  public TextArea getMalwareScoreText()
+  public static void showError(String errorMessage, String errorTitle)
   {
-    return malwareScoreText_;
+    Alert errorAlert = new Alert(Alert.AlertType.WARNING);
+    errorAlert.setTitle(errorTitle);
+    errorAlert.setContentText(errorMessage);
+    errorAlert.showAndWait();
   }
 
-  private void initComponents()
+  public static void stylize(Scene scene)
   {
-    // Set up the vertically-based layout
-    layout_ = new VBox(5);
-    layout_.setPadding(new Insets(5));
-    layout_.setAlignment(Pos.CENTER);
-
-    createButtonBar();
-    createSplitPane();
-    createStatusBar();
-
-    VBox.setVgrow(splitPane_, Priority.ALWAYS);
-    scene_ = new Scene(layout_, WIDTH, HEIGHT);
-    stylize(scene_);
-    setTitle("Binary Sanctity");
-    setScene(scene_);
+    scene.getStylesheets().add(
+      UIView.class.getResource("/UIStyle.css").toExternalForm());
   }
 
   private void createButtonBar()
   {
     buttonBar_ = new FlowPane(Orientation.HORIZONTAL);
-    buttonBar_.setPadding(new Insets(5));
-    buttonBar_.setHgap(5.0);
+    buttonBar_.setId("button-bar");
+    //buttonBar_.setPadding(new Insets(5));
+    //buttonBar_.setHgap(5.0);
     layout_.getChildren().add(buttonBar_);
 
     // "Add File" button
@@ -262,18 +348,25 @@ public class UIView extends Stage
 
     // "Add Folder" button
     addFolderButton_ = new Button("Add Folder");
-    // #TODO: setOnAction
+    addFolderButton_.setOnAction(event ->
+      UICommands.promptAndLoadFolder(this, analyzeTextCheckBox_.isSelected()));
     buttonBar_.getChildren().add(addFolderButton_);
 
     // "Remove" button
     removeButton_ = new Button("Remove");
-    // #TODO: setOnAction
+    removeButton_.setOnAction(event ->
+      UICommands.removeSelectedScoreItem(this));
     buttonBar_.getChildren().add(removeButton_);
 
     // "Clear" button
     clearButton_ = new Button("Clear");
-    // #TODO: setOnAction
+    clearButton_.setOnAction(event -> UICommands.clearScoreItems(this));
     buttonBar_.getChildren().add(clearButton_);
+
+    // "Cancel" button
+    cancelButton_ = new Button("Cancel");
+    cancelButton_.setOnAction(event -> UICommands.stopAllTasks());
+    buttonBar_.getChildren().add(cancelButton_);
 
     // "Analyze text" checkbox (might as well put it here since it's part of the
     // button bar)
@@ -287,10 +380,30 @@ public class UIView extends Stage
   {
     fileListView_ = new ListView<>();
     fileListView_.setCellFactory(param -> new ScoreItemListCell());
+    fileListView_.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
     fileListView_.getSelectionModel().selectedItemProperty().addListener(
       (observable, oldValue, newValue) ->
         UICommands.selectScoreItem(this, newValue));
     splitPane_.getItems().add(0, fileListView_);
+  }
+
+  private void createImportsTableView(Tab tab)
+  {
+    importsTableView_ = new TableView<ImportItem>();
+    importsTableView_.setEditable(false);
+    importsTableView_.setColumnResizePolicy(
+      TableView.CONSTRAINED_RESIZE_POLICY);
+    importsTableView_.setPlaceholder(new VBox());
+    TableColumn<ImportItem, String> nameColumn = new TableColumn<>("Name");
+    nameColumn.setCellValueFactory(param -> param.getValue().nameProperty());
+    TableColumn<ImportItem, String> libraryColumn =
+      new TableColumn<>("Library");
+    libraryColumn.setCellValueFactory(param ->
+      param.getValue().libraryProperty());
+    importsTableView_.getColumns().addAll(nameColumn, libraryColumn);
+    GridPane pane = createExpandingGridPane();
+    pane.add(importsTableView_, 0, 0);
+    tab.setContent(pane);
   }
 
   private void createMalwareScoreText(Tab tab)
@@ -299,15 +412,7 @@ public class UIView extends Stage
     malwareScoreText_.getStyleClass().addAll("mono-text", "analysis-text");
     malwareScoreText_.setEditable(false);
     malwareScoreText_.setWrapText(false);
-    GridPane pane = new GridPane();
-    RowConstraints rowConstraints = new RowConstraints();
-    rowConstraints.setFillHeight(true);
-    rowConstraints.setVgrow(Priority.ALWAYS);
-    pane.getRowConstraints().add(rowConstraints);
-    ColumnConstraints columnConstraints = new ColumnConstraints();
-    columnConstraints.setFillWidth(true);
-    columnConstraints.setHgrow(Priority.ALWAYS);
-    pane.getColumnConstraints().add(columnConstraints);
+    GridPane pane = createExpandingGridPane();
     pane.add(malwareScoreText_, 0,0);
     tab.setContent(pane);
   }
@@ -323,13 +428,14 @@ public class UIView extends Stage
   private void createStatusBar()
   {
     progressBar_ = new ProgressBar(0.0);
+    progressBar_.setMinWidth(Control.USE_PREF_SIZE);
     statusText_ = new Label("Ready");
     statusText_.getStyleClass().add("status-label");
     statusBox_ = new HBox(progressBar_, statusText_);
     statusBox_.getStyleClass().add("status-bar");
-    statusBox_.setSpacing(5.0);
+    //statusBox_.setSpacing(5.0);
     statusBox_.setAlignment(Pos.CENTER_LEFT);
-    HBox.setHgrow(statusText_, Priority.ALWAYS);
+    HBox.setHgrow(statusText_, Priority.SOMETIMES);
     layout_.getChildren().add(statusBox_);
   }
 
@@ -345,6 +451,7 @@ public class UIView extends Stage
 
     Tab importsTab = new Tab("Imports");
     importsTab.setClosable(false);
+    createImportsTableView(importsTab);
     tabPane_.getTabs().add(importsTab);
 
     Tab sectionNamesTab = new Tab("Section Names");
@@ -354,17 +461,37 @@ public class UIView extends Stage
     splitPane_.getItems().add(1, tabPane_);
   }
 
-  public static void stylize(Scene scene)
+  private void initComponents()
   {
-    scene.getStylesheets().add(
-      UIView.class.getResource("/UIStyle.css").toExternalForm());
+    // Set up the vertically-based layout
+    layout_ = new VBox(5);
+    layout_.getStyleClass().add("root-container");
+
+    createButtonBar();
+    createSplitPane();
+    createStatusBar();
+
+    VBox.setVgrow(splitPane_, Priority.ALWAYS);
+    scene_ = new Scene(layout_, WIDTH, HEIGHT);
+    stylize(scene_);
+    setTitle("Binary Sanctity");
+    setScene(scene_);
+
+    scene_.getWindow().addEventFilter(WindowEvent.WINDOW_CLOSE_REQUEST,
+      UICommands::closeUI);
   }
 
-  public static void showError(String errorMessage, String errorTitle)
+  private static GridPane createExpandingGridPane()
   {
-    Alert errorAlert = new Alert(Alert.AlertType.WARNING);
-    errorAlert.setTitle(errorTitle);
-    errorAlert.setContentText(errorMessage);
-    errorAlert.showAndWait();
+    GridPane pane = new GridPane();
+    RowConstraints rowConstraints = new RowConstraints();
+    rowConstraints.setFillHeight(true);
+    rowConstraints.setVgrow(Priority.ALWAYS);
+    pane.getRowConstraints().add(rowConstraints);
+    ColumnConstraints columnConstraints = new ColumnConstraints();
+    columnConstraints.setFillWidth(true);
+    columnConstraints.setHgrow(Priority.ALWAYS);
+    pane.getColumnConstraints().add(columnConstraints);
+    return pane;
   }
 }

@@ -1,5 +1,19 @@
 /* Custom classes and IDs */
 
+.root-container
+{
+    -fx-alignment: center;
+    -fx-padding: 5;
+    -fx-spacing: 5;
+}
+
+#button-bar
+{
+    -fx-padding: 5;
+    -fx-hgap: 5;
+    -fx-vgap: 5;
+}
+
 .score-item-malware
 {
     -fx-font-weight: bold;
@@ -28,7 +42,9 @@
 
 .status-bar
 {
+    -fx-alignment: center_left;
     -fx-padding: 2px;
+    -fx-spacing: 5;
 }
 
 .status-label
@@ -50,6 +66,7 @@
     -fx-focus-color: transparent;
     -fx-background-color: transparent;
     -fx-font-size: 12pt;
+    -fx-wrap-text: false;
 }
 
 .analysis-text .content
@@ -67,12 +84,14 @@ ListCell,
 ListView,
 Scene,
 SplitPane,
+TableView,
 TabPane,
 VBox
 {
     -fx-background-color: #3C3F41;
     -fx-text-fill: white;
 }
+
 
 /* Button */
 
@@ -102,6 +121,19 @@ VBox
     -fx-border-color: -fx-focus-color;
 }
 
+/* CheckBox */
+
+.check-box .box,
+.check-box .mark
+{
+    -fx-background-color: #4C5052;
+}
+
+.check-box:selected .mark
+{
+    -fx-background-color: #BABAA7;
+}
+
 /* ListView */
 
 .list-cell, .list-cell *
@@ -113,7 +145,7 @@ VBox
 
 .list-cell:selected
 {
-    -fx-border-color: #4C708C;
+    -fx-border-color: -fx-focus-color;
 }
 
 /* SplitPane */
@@ -165,7 +197,9 @@ VBox
 .scroll-bar *.track,
 .scroll-bar *.filler,
 .scroll-bar *.corner,
-*.scroll-pane *.corner
+*.scroll-pane *.corner,
+*.scroll-pane *.filler,
+*.virtual-flow *.corner
 {
     -fx-background-color: #3C3F41;
 }
@@ -181,13 +215,49 @@ VBox
     -fx-background-color: #565656;
 }
 
+.scroll-bar *.increment-button,
+.scroll-bar *.decrement-button
+{
+    -fx-background-color: #4C5052;
+}
+
 .scroll-bar *.increment-arrow,
 .scroll-bar *.decrement-arrow
 {
     -fx-shape: " ";
 }
 
+/* TableView */
+
+.table-view,
+.table-view .column-header,
+.table-view *.filler
+{
+    -fx-background-color: #3C3F41;
+    -fx-text-fill: white;
+}
+
+.table-view *.table-cell
+{
+    -fx-text-fill: white;
+}
+
+.table-row-cell
+{
+    -fx-background-color: #3C3F41;
+    -fx-border-color: #3C3F41;
+    -fx-table-cell-border-color: #3C3F41;
+    -fx-text-fill: white;
+}
+
+.table-view *.table-cell:selected,
+.table-row-cell:selected
+{
+    -fx-background-color: #4C5052;
+}
+
 /* TextArea */
+
 .text-area
 {
     -fx-control-inner-background: #3C3F41;
