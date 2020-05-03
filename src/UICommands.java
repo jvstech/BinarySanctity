@@ -11,7 +11,6 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TableView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.WindowEvent;
@@ -134,6 +133,8 @@ public class UICommands
     // If the analysis controls are ever changed, this function will have to be
     // changed, too.
     view.getMalwareScoreText().clear();
+    view.getImportsTableView().setItems(null);
+    view.getSectionsTableView().setItems(null);
   }
 
   public static void clearScoreItems(UIView view)
@@ -276,8 +277,8 @@ public class UICommands
         String.format("File: %s\nDirectory: %s\n\n%s",
           path.getFileName(), path.getParent(),
           scoreItem.getScore().toReportString(false)));
-      TableView<UIView.ImportItem> importsTable = view.getImportsTableView();
-      importsTable.setItems(scoreItem.getImportItems());
+      view.getImportsTableView().setItems(scoreItem.getImportItems());
+      view.getSectionsTableView().setItems(scoreItem.getSectionItems());
     }
   }
 

@@ -74,9 +74,8 @@ public class ShannonEntropy
     data.position(oldPos);
 
     double entropy = 0.0;
-    for (int i = 0; i < byteCounts.length; ++i)
+    for (int count : byteCounts)
     {
-      int count = byteCounts[i];
       if (count > 0)
       {
         double probability = 1.0 * count / totalBytesRead;

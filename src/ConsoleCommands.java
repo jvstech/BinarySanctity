@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class ConsoleCommands
 {

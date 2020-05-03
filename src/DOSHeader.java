@@ -12,8 +12,6 @@
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class DOSHeader implements Header
 {

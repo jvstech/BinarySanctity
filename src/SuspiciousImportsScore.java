@@ -14,6 +14,33 @@ import java.util.stream.Collectors;
 
 public class SuspiciousImportsScore extends Score
 {
+  // The layout of this list is as follows:
+  //   new SuspiciousImports(
+  //     "Description of imports",
+  //     score value,
+  //     new String[][]
+  //     {
+  //       {
+  //         "Groups of regular expressions",
+  //         "for sets of imports that *must* exist to be considered suspicious"
+  //       },
+  //       {
+  //         "At least one of these groups must exist,"
+  //       },
+  //       {
+  //         "but it is not required that ALL of them exist."
+  //       }
+  //     },
+  //     amplified score value,
+  //     new String[][]
+  //     {
+  //       {
+  //         "optionally existing groups of regular expressions",
+  //         "for imports that amplify the suspicion value"
+  //       }
+  //     }
+  //   )
+
   private static final List<SuspiciousImports> SUSPICIOUS_IMPORTS =
     Arrays.asList(
       new SuspiciousImports(
@@ -179,6 +206,17 @@ public class SuspiciousImportsScore extends Score
             {
               "LoadLibrary[AW]",
               "GetProcAddress"
+            }
+          }
+        ),
+      new SuspiciousImports(
+        "Screen capturing/logging",
+        200,
+        new String[][]
+          {
+            {
+              "capCreateCaptureWindow[AW]",
+              "capGetDriverDescription[AW]"
             }
           }
         )

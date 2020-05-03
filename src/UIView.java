@@ -7,9 +7,8 @@
 //!                 window and controls for display and use.
 //!
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
@@ -67,11 +66,212 @@ public class UIView extends Stage
     }
   }
 
+  // Nested class for display formatting of section permissions
+  public class SectionPermissions implements Comparable<SectionPermissions>
+  {
+    private final int value_;
+
+    public SectionPermissions()
+    {
+      value_ = 0;
+    }
+
+    public SectionPermissions(int value)
+    {
+      value_ = value;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+      if (this == o)
+      {
+        return true;
+      }
+
+      if (!(o instanceof SectionPermissions))
+      {
+        return false;
+      }
+
+      SectionPermissions rhs = (SectionPermissions)o;
+      return (value_ == rhs.value_);
+    }
+
+    @Override
+    public int hashCode()
+    {
+      return value_;
+    }
+
+    @Override
+    public int compareTo(SectionPermissions rhs)
+    {
+      return Integer.compare(value_, rhs.value_);
+    }
+
+    @Override
+    public String toString()
+    {
+      return String.format("0x%x (%s)", value_,
+        String.join(" ",
+          SectionCharacteristicTypes.getSimpleStrings(value_)));
+    }
+  }
+
+  // Nested class for hex display formatting of integer/long values
+  public class HexValue implements Comparable<HexValue>
+  {
+    private final long value_;
+
+    public HexValue(long value)
+    {
+      value_ = value;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+      if (this == o)
+      {
+        return true;
+      }
+
+      if (!(o instanceof HexValue))
+      {
+        return false;
+      }
+
+      HexValue rhs = (HexValue)o;
+      return (value_ == rhs.value_);
+    }
+
+    @Override
+    public int hashCode()
+    {
+      return Long.hashCode(value_);
+    }
+
+    @Override
+    public int compareTo(HexValue rhs)
+    {
+      return Long.compare(value_, rhs.value_);
+    }
+
+    @Override
+    public String toString()
+    {
+      return String.format("0x%x", value_);
+    }
+  }
+
+  // Nested class holding displayable information about a PE section
+  public class SectionItem
+  {
+    private final SimpleStringProperty name_;
+    private final ObservableValue<SectionPermissions> permissions_;
+    private final SimpleIntegerProperty virtualSize_;
+    private final SimpleIntegerProperty rawSize_;
+    private final ObservableValue<HexValue> virtualOffset_;
+    private final ObservableValue<HexValue> fileOffset_;
+
+    public SectionItem(SectionHeader section)
+    {
+      name_ = new SimpleStringProperty(
+        String.format("\"%s\"", StringUtil.escape(section.getName())));
+
+      SectionPermissions permissions;
+      try
+      {
+        permissions = new SectionPermissions(section.getCharacteristics());
+      }
+      catch (IOException | EndOfStreamException e)
+      {
+        permissions = new SectionPermissions();
+      }
+
+      int virtualSize = 0;
+      try
+      {
+        virtualSize = section.getVirtualSize();
+      }
+      catch (IOException | EndOfStreamException e)
+      {
+      }
+
+      int rawSize = 0;
+      try
+      {
+        rawSize = section.getSizeOfRawData();
+      }
+      catch (IOException | EndOfStreamException e)
+      {
+      }
+
+      HexValue virtualOffset;
+      try
+      {
+        virtualOffset = new HexValue(section.getVirtualAddress());
+      }
+      catch (IOException | EndOfStreamException e)
+      {
+        virtualOffset = new HexValue(0);
+      }
+
+      HexValue fileOffset;
+      try
+      {
+        fileOffset = new HexValue(section.getPointerToRawData());
+      }
+      catch (IOException | EndOfStreamException e)
+      {
+        fileOffset = new HexValue(0);
+      }
+
+      permissions_ = new ReadOnlyObjectWrapper<>(permissions);
+      virtualSize_ = new SimpleIntegerProperty(virtualSize);
+      rawSize_ = new SimpleIntegerProperty(rawSize);
+      virtualOffset_ = new ReadOnlyObjectWrapper<>(virtualOffset);
+      fileOffset_ = new ReadOnlyObjectWrapper<>(fileOffset);
+    }
+
+    public StringProperty nameProperty()
+    {
+      return name_;
+    }
+
+    public ObservableValue<SectionPermissions> permissionsProperty()
+    {
+      return permissions_;
+    }
+
+    public IntegerProperty virtualSizeProperty()
+    {
+      return virtualSize_;
+    }
+
+    public IntegerProperty rawSizeProperty()
+    {
+      return rawSize_;
+    }
+
+    public ObservableValue<HexValue> virtualOffsetProperty()
+    {
+      return virtualOffset_;
+    }
+
+    public ObservableValue<HexValue> fileOffsetProperty()
+    {
+      return fileOffset_;
+    }
+  }
+
   // Nested class for combining a PortableExecutableScore with an executable
   // file name as a ListView item
   public class ScoreItem
   {
     private final ObservableList<ImportItem> importItems_;
+    private final ObservableList<SectionItem> sectionItems_;
     private PortableExecutableScore score_;
     private String filePath_;
     private String fileName_;
@@ -89,6 +289,7 @@ public class UIView extends Stage
       errorTitle_ = null;
       errorMessage_ = null;
 
+      // Compose the import items
       List<ImportItem> importItems = new ArrayList<>();
       try
       {
@@ -107,6 +308,15 @@ public class UIView extends Stage
       }
 
       importItems_ = FXCollections.observableArrayList(importItems);
+
+      // Compose the section items
+      List<SectionItem> sectionItems = new ArrayList<>();
+      for (SectionHeader section : score_.getPEFile().getSections())
+      {
+        sectionItems.add(new SectionItem(section));
+      }
+
+      sectionItems_ = FXCollections.observableArrayList(sectionItems);
     }
 
     public ScoreItem(Exception ex, String errorTitle, String errorMessage,
@@ -119,6 +329,7 @@ public class UIView extends Stage
       errorTitle_ = errorTitle;
       errorMessage_ = errorMessage;
       importItems_ = FXCollections.observableArrayList();
+      sectionItems_ = FXCollections.observableArrayList();
     }
 
     public String getErrorMessage()
@@ -144,6 +355,11 @@ public class UIView extends Stage
     public ObservableList<ImportItem> getImportItems()
     {
       return importItems_;
+    }
+
+    public ObservableList<SectionItem> getSectionItems()
+    {
+      return sectionItems_;
     }
 
     public PortableExecutableScore getScore()
@@ -251,6 +467,9 @@ public class UIView extends Stage
   // Imports TableView
   private TableView<ImportItem> importsTableView_;
 
+  // Sections TableView
+  private TableView<SectionItem> sectionsTableView_;
+
   // Status bar
   private HBox statusBox_;
   private ProgressBar progressBar_;
@@ -291,6 +510,11 @@ public class UIView extends Stage
   public TableView<ImportItem> getImportsTableView()
   {
     return importsTableView_;
+  }
+
+  public TableView<SectionItem> getSectionsTableView()
+  {
+    return sectionsTableView_;
   }
 
   public TextArea getMalwareScoreText()
@@ -417,6 +641,46 @@ public class UIView extends Stage
     tab.setContent(pane);
   }
 
+  private void createSectionsTableView(Tab tab)
+  {
+    sectionsTableView_ = new TableView<SectionItem>();
+    sectionsTableView_.setEditable(false);
+    sectionsTableView_.setColumnResizePolicy(
+      TableView.CONSTRAINED_RESIZE_POLICY);
+    sectionsTableView_.setPlaceholder(new VBox());
+    TableColumn<SectionItem, String> nameColumn = new TableColumn<>("Name");
+    nameColumn.setCellValueFactory(param -> param.getValue().nameProperty());
+    TableColumn<SectionItem, SectionPermissions> permsColumn =
+      new TableColumn<>("Permissions");
+    permsColumn.setCellValueFactory(
+      param -> param.getValue().permissionsProperty());
+    TableColumn<SectionItem, Integer> virtSizeColumn =
+      new TableColumn<>("Virtual Size");
+    virtSizeColumn.getStyleClass().add("section-number");
+    virtSizeColumn.setCellValueFactory(
+      param -> param.getValue().virtualSizeProperty().asObject());
+    TableColumn<SectionItem, Integer> rawSizeColumn =
+      new TableColumn<>("Raw Size");
+    rawSizeColumn.getStyleClass().add("section-number");
+    rawSizeColumn.setCellValueFactory(
+      param -> param.getValue().rawSizeProperty().asObject());
+    TableColumn<SectionItem, HexValue> virtOffsetColumn =
+      new TableColumn<>("Virtual Offset");
+    virtOffsetColumn.setCellValueFactory(
+      param -> param.getValue().virtualOffsetProperty());
+    virtOffsetColumn.getStyleClass().add("section-number");
+    TableColumn<SectionItem, HexValue> fileOffsetColumn =
+      new TableColumn<>("File Offset");
+    fileOffsetColumn.getStyleClass().add("section-number");
+    fileOffsetColumn.setCellValueFactory(
+      param -> param.getValue().fileOffsetProperty());
+    sectionsTableView_.getColumns().addAll(nameColumn, permsColumn,
+      virtSizeColumn, rawSizeColumn, virtOffsetColumn, fileOffsetColumn);
+    GridPane pane = createExpandingGridPane();
+    pane.add(sectionsTableView_, 0, 0);
+    tab.setContent(pane);
+  }
+
   private void createSplitPane()
   {
     splitPane_ = new SplitPane();
@@ -433,7 +697,6 @@ public class UIView extends Stage
     statusText_.getStyleClass().add("status-label");
     statusBox_ = new HBox(progressBar_, statusText_);
     statusBox_.getStyleClass().add("status-bar");
-    //statusBox_.setSpacing(5.0);
     statusBox_.setAlignment(Pos.CENTER_LEFT);
     HBox.setHgrow(statusText_, Priority.SOMETIMES);
     layout_.getChildren().add(statusBox_);
@@ -454,8 +717,9 @@ public class UIView extends Stage
     createImportsTableView(importsTab);
     tabPane_.getTabs().add(importsTab);
 
-    Tab sectionNamesTab = new Tab("Section Names");
+    Tab sectionNamesTab = new Tab("Sections");
     sectionNamesTab.setClosable(false);
+    createSectionsTableView(sectionNamesTab);
     tabPane_.getTabs().add(sectionNamesTab);
 
     splitPane_.getItems().add(1, tabPane_);

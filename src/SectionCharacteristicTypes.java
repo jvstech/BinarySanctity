@@ -45,52 +45,101 @@ public class SectionCharacteristicTypes
   public static final int READ = 0x40000000;
   public static final int WRITE = 0x80000000;
 
-  private static final Map<Integer, String> kTypeNames;
+  private static final Map<Integer, String> TYPE_NAMES;
+  private static final Map<Integer, String> SIMPLE_TYPE_NAMES;
 
   static
   {
-    kTypeNames = new HashMap<>();
-    kTypeNames.put(NO_PAD, "NO_PAD");
-    kTypeNames.put(CODE, "CODE");
-    kTypeNames.put(INITIALIZED_DATA, "INITIALIZED_DATA");
-    kTypeNames.put(UNINITIALIZED_DATA, "UNINITIALIZED_DATA");
-    kTypeNames.put(LINK_INFO, "LINK_INFO");
-    kTypeNames.put(LINK_REMOVE, "LINK_REMOVE");
-    kTypeNames.put(LINK_COMDAT, "LINK_COMDAT");
-    kTypeNames.put(GP_RELATIVE, "GP_RELATIVE");
-    kTypeNames.put(ALIGN_1_BYTES, "ALIGN_1_BYTES");
-    kTypeNames.put(ALIGN_2_BYTES, "ALIGN_2_BYTES");
-    kTypeNames.put(ALIGN_4_BYTES, "ALIGN_4_BYTES");
-    kTypeNames.put(ALIGN_8_BYTES, "ALIGN_8_BYTES");
-    kTypeNames.put(ALIGN_16_BYTES, "ALIGN_16_BYTES");
-    kTypeNames.put(ALIGN_32_BYTES, "ALIGN_32_BYTES");
-    kTypeNames.put(ALIGN_64_BYTES, "ALIGN_64_BYTES");
-    kTypeNames.put(ALIGN_128_BYTES, "ALIGN_128_BYTES");
-    kTypeNames.put(ALIGN_256_BYTES, "ALIGN_256_BYTES");
-    kTypeNames.put(ALIGN_512_BYTES, "ALIGN_512_BYTES");
-    kTypeNames.put(ALIGN_1024_BYTES, "ALIGN_1024_BYTES");
-    kTypeNames.put(ALIGN_2048_BYTES, "ALIGN_2048_BYTES");
-    kTypeNames.put(ALIGN_4096_BYTES, "ALIGN_4096_BYTES");
-    kTypeNames.put(ALIGN_8192_BYTES, "ALIGN_8192_BYTES");
-    kTypeNames.put(LINK_RELOCATION_OVERFLOW, "LINK_RELOCATION_OVERFLOW");
-    kTypeNames.put(DISCARDABLE, "DISCARDABLE");
-    kTypeNames.put(NOT_CACHED, "NOT_CACHED");
-    kTypeNames.put(NOT_PAGED, "NOT_PAGED");
-    kTypeNames.put(SHARED, "SHARED");
-    kTypeNames.put(EXECUTE, "EXECUTE");
-    kTypeNames.put(READ, "READ");
-    kTypeNames.put(WRITE, "WRITE");
+    TYPE_NAMES = new HashMap<>();
+    SIMPLE_TYPE_NAMES = new HashMap<>();
+
+    TYPE_NAMES.put(NO_PAD, "NO_PAD");
+    TYPE_NAMES.put(CODE, "CODE");
+    TYPE_NAMES.put(INITIALIZED_DATA, "INITIALIZED_DATA");
+    TYPE_NAMES.put(UNINITIALIZED_DATA, "UNINITIALIZED_DATA");
+    TYPE_NAMES.put(LINK_INFO, "LINK_INFO");
+    TYPE_NAMES.put(LINK_REMOVE, "LINK_REMOVE");
+    TYPE_NAMES.put(LINK_COMDAT, "LINK_COMDAT");
+    TYPE_NAMES.put(GP_RELATIVE, "GP_RELATIVE");
+    TYPE_NAMES.put(ALIGN_1_BYTES, "ALIGN_1_BYTES");
+    TYPE_NAMES.put(ALIGN_2_BYTES, "ALIGN_2_BYTES");
+    TYPE_NAMES.put(ALIGN_4_BYTES, "ALIGN_4_BYTES");
+    TYPE_NAMES.put(ALIGN_8_BYTES, "ALIGN_8_BYTES");
+    TYPE_NAMES.put(ALIGN_16_BYTES, "ALIGN_16_BYTES");
+    TYPE_NAMES.put(ALIGN_32_BYTES, "ALIGN_32_BYTES");
+    TYPE_NAMES.put(ALIGN_64_BYTES, "ALIGN_64_BYTES");
+    TYPE_NAMES.put(ALIGN_128_BYTES, "ALIGN_128_BYTES");
+    TYPE_NAMES.put(ALIGN_256_BYTES, "ALIGN_256_BYTES");
+    TYPE_NAMES.put(ALIGN_512_BYTES, "ALIGN_512_BYTES");
+    TYPE_NAMES.put(ALIGN_1024_BYTES, "ALIGN_1024_BYTES");
+    TYPE_NAMES.put(ALIGN_2048_BYTES, "ALIGN_2048_BYTES");
+    TYPE_NAMES.put(ALIGN_4096_BYTES, "ALIGN_4096_BYTES");
+    TYPE_NAMES.put(ALIGN_8192_BYTES, "ALIGN_8192_BYTES");
+    TYPE_NAMES.put(LINK_RELOCATION_OVERFLOW, "LINK_RELOCATION_OVERFLOW");
+    TYPE_NAMES.put(DISCARDABLE, "DISCARDABLE");
+    TYPE_NAMES.put(NOT_CACHED, "NOT_CACHED");
+    TYPE_NAMES.put(NOT_PAGED, "NOT_PAGED");
+    TYPE_NAMES.put(SHARED, "SHARED");
+    TYPE_NAMES.put(EXECUTE, "EXECUTE");
+    TYPE_NAMES.put(READ, "READ");
+    TYPE_NAMES.put(WRITE, "WRITE");
+
+    SIMPLE_TYPE_NAMES.put(NO_PAD, "np");
+    SIMPLE_TYPE_NAMES.put(CODE, "c");
+    SIMPLE_TYPE_NAMES.put(INITIALIZED_DATA, "i");
+    SIMPLE_TYPE_NAMES.put(UNINITIALIZED_DATA, "u");
+    SIMPLE_TYPE_NAMES.put(LINK_INFO, "li");
+    SIMPLE_TYPE_NAMES.put(LINK_REMOVE, "lr");
+    SIMPLE_TYPE_NAMES.put(LINK_COMDAT, "lc");
+    SIMPLE_TYPE_NAMES.put(GP_RELATIVE, "gprel");
+    SIMPLE_TYPE_NAMES.put(ALIGN_1_BYTES, "<<0");
+    SIMPLE_TYPE_NAMES.put(ALIGN_2_BYTES, "<<1");
+    SIMPLE_TYPE_NAMES.put(ALIGN_4_BYTES, "<<2");
+    SIMPLE_TYPE_NAMES.put(ALIGN_8_BYTES, "<<3");
+    SIMPLE_TYPE_NAMES.put(ALIGN_16_BYTES, "<<4");
+    SIMPLE_TYPE_NAMES.put(ALIGN_32_BYTES, "<<5");
+    SIMPLE_TYPE_NAMES.put(ALIGN_64_BYTES, "<<6");
+    SIMPLE_TYPE_NAMES.put(ALIGN_128_BYTES, "<<7");
+    SIMPLE_TYPE_NAMES.put(ALIGN_256_BYTES, "<<8");
+    SIMPLE_TYPE_NAMES.put(ALIGN_512_BYTES, "<<9");
+    SIMPLE_TYPE_NAMES.put(ALIGN_1024_BYTES, "<<10");
+    SIMPLE_TYPE_NAMES.put(ALIGN_2048_BYTES, "<<11");
+    SIMPLE_TYPE_NAMES.put(ALIGN_4096_BYTES, "<<12");
+    SIMPLE_TYPE_NAMES.put(ALIGN_8192_BYTES, "<<13");
+    SIMPLE_TYPE_NAMES.put(LINK_RELOCATION_OVERFLOW, "o");
+    SIMPLE_TYPE_NAMES.put(DISCARDABLE, "d");
+    SIMPLE_TYPE_NAMES.put(NOT_CACHED, "!c");
+    SIMPLE_TYPE_NAMES.put(NOT_PAGED, "!p");
+    SIMPLE_TYPE_NAMES.put(SHARED, "s");
+    SIMPLE_TYPE_NAMES.put(EXECUTE, "x");
+    SIMPLE_TYPE_NAMES.put(READ, "r");
+    SIMPLE_TYPE_NAMES.put(WRITE, "w");
   }
 
   // Converts section characteristic flags to a list of strings
   public static List<String> getStrings(int c)
   {
     ArrayList<String> types = new ArrayList<>();
-    for (int k : kTypeNames.keySet())
+    for (int k : TYPE_NAMES.keySet())
     {
       if ((c & k) != 0)
       {
-        types.add(kTypeNames.get(k));
+        types.add(TYPE_NAMES.get(k));
+      }
+    }
+
+    return types;
+  }
+
+  // Converts section characteristic flags to a list of simple strings
+  public static List<String> getSimpleStrings(int c)
+  {
+    ArrayList<String> types = new ArrayList<>();
+    for (int k : SIMPLE_TYPE_NAMES.keySet())
+    {
+      if ((c & k) != 0)
+      {
+        types.add(SIMPLE_TYPE_NAMES.get(k));
       }
     }
 
@@ -105,5 +154,4 @@ public class SectionCharacteristicTypes
     return (c & ~(ALIGN_1_BYTES | ALIGN_2_BYTES | ALIGN_8_BYTES |
       ALIGN_128_BYTES));
   }
-
 }

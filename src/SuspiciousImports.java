@@ -38,12 +38,12 @@ public class SuspiciousImports
         "urlmon",
         "user32",
         "wininet",
-        "winsock|wsock32|mswsock|wshelp|ws2_32|wshtcpip"
+        "winsock|wsock32|mswsock|wshelp|ws2_32|wshtcpip",
+        "avicap32"
       })
       .map(s -> Pattern.compile("^" + s + "(?:\\.dll)?$",
         Pattern.CASE_INSENSITIVE))
       .toArray(Pattern[]::new);
-
   }
 
   private static Pattern[] getDefaultSuspiciousFunctionsList()
@@ -55,6 +55,8 @@ public class SuspiciousImports
         "AttachThreadInput",
         //"Bind",
         "BitBlt",
+        "capCreateCaptureWindow[AW]",
+        "capGetDriverDescription[AW]",
         "CertOpenSystemStore",
         //"Connect",
         "ConnectNamedPipe",

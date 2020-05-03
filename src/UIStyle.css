@@ -42,7 +42,7 @@
 
 .status-bar
 {
-    -fx-alignment: center_left;
+    -fx-alignment: CENTER_LEFT;
     -fx-padding: 2px;
     -fx-spacing: 5;
 }
@@ -72,6 +72,11 @@
 .analysis-text .content
 {
     -fx-background-radius: 0;
+}
+
+.section-number
+{
+    -fx-alignment: CENTER_RIGHT;
 }
 
 /* Control types */
@@ -254,6 +259,16 @@ VBox
 .table-row-cell:selected
 {
     -fx-background-color: #4C5052;
+}
+
+.table-view .column-header .label
+{
+    -fx-alignment: CENTER_LEFT;
+}
+
+.table-view .column-header-background .nested-column-header .table-column
+{
+    -fx-border-color: transparent #BABAA7 transparent #BABAA7;
 }
 
 /* TextArea */

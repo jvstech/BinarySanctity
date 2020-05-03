@@ -110,7 +110,7 @@ public class SectionNameScore extends Score
   private static HashMap<Pattern, String> getPackedSectionPatterns()
   {
     final HashMap<Pattern, String> packerPatterns = new HashMap<>();
-    packerPatterns.put(Pattern.compile("^[_\\.]*UPX[\\d!]*$"), "UPX");
+    packerPatterns.put(Pattern.compile("^[_.]*UPX[\\d!]*$"), "UPX");
     packerPatterns.put(Pattern.compile("^SR$"), "Armadillo");
     packerPatterns.put(Pattern.compile("^\\.*aspack$",
       Pattern.CASE_INSENSITIVE), "Aspack");

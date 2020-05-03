@@ -119,11 +119,7 @@ public class ImportLookup implements Header
         return String.format("<ordinal:%d>", getOrdinalNumber());
       }
     }
-    catch (IOException e)
-    {
-      return null;
-    }
-    catch (EndOfStreamException e)
+    catch (IOException | EndOfStreamException e)
     {
       return null;
     }

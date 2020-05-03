@@ -6,7 +6,6 @@
 //! @description    Collection of utility functions for working with strings.
 //!
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
@@ -17,7 +16,7 @@ public class StringUtil
   // Adds newlines to strings to wrap long text without breaking words
   public static String wordWrap(String s, int columns, int startPosition)
   {
-    StringBuffer sb = new StringBuffer(s);
+    StringBuilder sb = new StringBuilder(s);
     int i = startPosition;
     while (i + columns < sb.length() &&
       (i = sb.lastIndexOf(" ", i + columns)) != -1)
@@ -47,7 +46,7 @@ public class StringUtil
       return s;
     }
 
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < s.length(); ++i)
     {
       char c = s.charAt(i);
