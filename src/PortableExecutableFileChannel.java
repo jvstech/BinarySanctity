@@ -178,7 +178,7 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
     return importDirectories_;
   }
 
-  public TreeMap<String, String[]> getImportedNames()
+  public TreeMap<String, String[]> getImportedNames(boolean fixNullNames)
     throws IOException, EndOfStreamException
   {
     TreeMap<String, String[]> importedNames = new TreeMap<>();
@@ -189,20 +189,38 @@ public class PortableExecutableFileChannel extends ReadOnlyBinaryFileChannel
 
     for (ImportDirectory importDirectory : importDirectories_)
     {
+      String importedName = importDirectory.getName();
+      if (importedName == null && fixNullNames)
+      {
+        importedName = "";
+      }
+
       ArrayList<String> nameList = new ArrayList<>();
       for (ImportLookup importLookup : importDirectory.getImportLookupTable())
       {
-        if (!importLookup.isImportByOrdinal())
-        {
-          nameList.add(importLookup.getName());
-        }
+        nameList.add(importLookup.toString());
       }
 
-      importedNames.put(importDirectory.getName(),
+
+      // If this import already exists (which is common with null names),
+      // combine the imported symbols.
+      String[] existingImports = importedNames.get(importedName);
+      if (existingImports != null)
+      {
+        nameList.addAll(0, Arrays.asList(existingImports));
+      }
+
+      importedNames.put(importedName,
         nameList.toArray(new String[0]));
     }
 
     return importedNames;
+  }
+
+  public TreeMap<String, String[]> getImportedNames()
+    throws IOException, EndOfStreamException
+  {
+    return getImportedNames(false);
   }
 
   private void validateAll()

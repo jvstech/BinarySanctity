@@ -430,6 +430,7 @@ public class UICommands
 
         UIView.showError(errorMessage, "Analysis Failure");
         view.statusProperty().setValue(errorMessage);
+        view.getProgressBar().setProgress(0.0);
       }));
 
     TaskPool.execute(task);

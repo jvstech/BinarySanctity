@@ -219,6 +219,16 @@ public class SuspiciousImportsScore extends Score
               "capGetDriverDescription[AW]"
             }
           }
+        ),
+      new SuspiciousImports(
+        "Bad import pointers",
+        500,
+        new String[][]
+          {
+            {
+              "<invalid_rva:0x[0-9a-fA-F]+>"
+            }
+          }
         )
       );
 
@@ -254,9 +264,10 @@ public class SuspiciousImportsScore extends Score
   private void characterize()
     throws IOException, EndOfStreamException
   {
-    Set<String> importedNames = peFile_.getImportedNames().values().stream()
-      .flatMap(Arrays::stream)
-      .collect(Collectors.toSet());
+    Set<String> importedNames =
+      peFile_.getImportedNames(true).values().stream()
+        .flatMap(Arrays::stream)
+        .collect(Collectors.toSet());
     for (SuspiciousImports suspiciousImports : SUSPICIOUS_IMPORTS)
     {
       int currentScore = 0;

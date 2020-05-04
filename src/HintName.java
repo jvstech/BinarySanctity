@@ -92,6 +92,15 @@ public class HintName implements Header
   @Override
   public String toString()
   {
-    return name_;
+    if (name_ != null)
+    {
+      return name_;
+    }
+    else if (hint_ != 0)
+    {
+      return String.format("<hint:0x%x>", hint_);
+    }
+
+    return String.format("<invalid_rva:0x%x>", rva_.getValue());
   }
 }

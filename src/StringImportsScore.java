@@ -44,7 +44,7 @@ public class StringImportsScore extends Score
       }
 
       Set<String> importedFuncs = new TreeSet<>();
-      peFile.getImportedNames().values().stream()
+      peFile.getImportedNames(true).values().stream()
         .flatMap(Arrays::stream)
         .forEach(importedFuncs::add);
       ArrayList<Pattern> funcPatterns = new ArrayList<>(

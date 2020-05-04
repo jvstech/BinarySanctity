@@ -121,7 +121,6 @@ public class ImportLookup implements Header
     }
     catch (IOException | EndOfStreamException e)
     {
-      return null;
     }
 
     return hintName_.toString();

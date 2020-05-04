@@ -544,9 +544,9 @@ public class UIView extends Stage
 
   public static void showError(String errorMessage, String errorTitle)
   {
-    Alert errorAlert = new Alert(Alert.AlertType.WARNING);
+    Alert errorAlert = new Alert(Alert.AlertType.WARNING, errorMessage);
+    errorAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
     errorAlert.setTitle(errorTitle);
-    errorAlert.setContentText(errorMessage);
     errorAlert.showAndWait();
   }
 

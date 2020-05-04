@@ -118,6 +118,12 @@ public class StringUtil
     return true;
   }
 
+  // Returns true of a string is null or empty
+  public static boolean isNullOrEmpty(String s)
+  {
+    return (s == null || s.isEmpty());
+  }
+
   // Returns true if a string is null, empty, or only whitespace
   public static boolean isNullOrWhiteSpace(String s)
   {
