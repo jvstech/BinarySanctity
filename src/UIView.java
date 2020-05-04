@@ -178,7 +178,7 @@ public class UIView extends Stage
     public SectionItem(SectionHeader section)
     {
       name_ = new SimpleStringProperty(
-        String.format("\"%s\"", StringUtil.escape(section.getName())));
+        String.format("\"%s\"", StringUtil.escapeFull(section.getName())));
 
       SectionPermissions permissions;
       try

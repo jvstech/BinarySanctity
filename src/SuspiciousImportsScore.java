@@ -258,7 +258,7 @@ public class SuspiciousImportsScore extends Score
   @Override
   public boolean isSoftMalwareIndication()
   {
-    return (getValue() > 80);
+    return (getValue() > 0);
   }
 
   private void characterize()
@@ -271,29 +271,50 @@ public class SuspiciousImportsScore extends Score
     for (SuspiciousImports suspiciousImports : SUSPICIOUS_IMPORTS)
     {
       int currentScore = 0;
-      boolean hasRequiredMatch =
-        Arrays.stream(suspiciousImports.getNames())
-          .anyMatch(names -> Arrays.stream(names)
-            .allMatch(name -> importedNames.stream()
-              .anyMatch(importedName ->
-                Pattern.matches("^" + name + "$", importedName))));
-      if (hasRequiredMatch)
+      for (String[] suspiciousNames : suspiciousImports.getNames())
       {
-        currentScore = suspiciousImports.getScore();
-        boolean hasOptionalMatch =
-          Arrays.stream(suspiciousImports.getOptionalNames())
-          .anyMatch(names -> Arrays.stream(names)
-          .allMatch(name -> importedNames.stream()
-            .anyMatch(importedName ->
-              Pattern.matches("^" + name + "$", importedName))));
-        if (hasOptionalMatch)
+        if (hasImportMatch(importedNames, suspiciousNames))
         {
-          currentScore = suspiciousImports.getOptionalScore();
-        }
+          currentScore = suspiciousImports.getScore();
+          for (String[] optionalNames : suspiciousImports.getOptionalNames())
+          {
+            if (hasImportMatch(importedNames, optionalNames))
+            {
+              currentScore = suspiciousImports.getOptionalScore();
+              break;
+            }
+          }
 
-        addDetail(suspiciousImports.getDescription());
-        setValue(getValue() + currentScore);
+          addDetail(suspiciousImports.getDescription());
+          setValue(getValue() + currentScore);
+        }
       }
     }
+  }
+
+  private static boolean hasImportMatch(Set<String> importedNames,
+    String[] suspiciousNames)
+  {
+    boolean isMatch = true;
+    for (String suspiciousName : suspiciousNames)
+    {
+      boolean isCurrentMatch = false;
+      for (String importedName : importedNames)
+      {
+        if (Pattern.matches("^" + suspiciousName + "$", importedName))
+        {
+          isCurrentMatch = true;
+          break;
+        }
+      }
+
+      isMatch = isCurrentMatch;
+      if (!isCurrentMatch)
+      {
+        break;
+      }
+    }
+
+    return isMatch;
   }
 }
