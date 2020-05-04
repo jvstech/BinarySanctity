@@ -34,7 +34,7 @@ public class PortableExecutableScore extends AggregateScore
       // otherwise being a valid executable file can only be described as
       // malware.
       statusCallback.accept("Invalid/missing imports");
-      add(new GenericScore(3000,"Invalid/missing import directory"));
+      add(new GenericScore(3000,"Invalid/missing import directory", 0));
     }
     else
     {

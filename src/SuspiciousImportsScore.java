@@ -258,7 +258,7 @@ public class SuspiciousImportsScore extends Score
   @Override
   public boolean isSoftMalwareIndication()
   {
-    return (getValue() > 0);
+    return (getValue() > 15);
   }
 
   private void characterize()
