@@ -78,6 +78,7 @@ public class ImportDirectory implements Header
         iltRvaPos = relpos(Offsets.IMPORT_ADDRESS_TABLE_RVA.position);
         if (DataUtil.isInBounds(iltRvaPos, peFile_))
         {
+          iltRva = peFile_.readInt32(iltRvaPos);
           importLookupTableRVA_ =
             new RelativeVirtualAddress(iltRva, peFile_.getSections());
           isILTValid = importLookupTableRVA_.isValid(peFile_);

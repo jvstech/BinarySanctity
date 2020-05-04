@@ -560,8 +560,6 @@ public class UIView extends Stage
   {
     buttonBar_ = new FlowPane(Orientation.HORIZONTAL);
     buttonBar_.setId("button-bar");
-    //buttonBar_.setPadding(new Insets(5));
-    //buttonBar_.setHgap(5.0);
     layout_.getChildren().add(buttonBar_);
 
     // "Add File" button
