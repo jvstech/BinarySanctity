@@ -8,6 +8,8 @@
 //!
 
 import javafx.application.Platform;
+import javafx.beans.property.Property;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.ProgressBar;
@@ -30,20 +32,22 @@ import java.util.function.Consumer;
 public class UICommands
 {
   // Nested class for asynchronously loading and analyzing executable files
-  private static class PromptAndLoadFilesTask extends Task<Void>
+  private static class AnalyzeFilesTask extends Task<Void>
   {
     private List<File> files_;
     private UIView view_;
     private boolean allowSlowAnalysis_;
     private boolean ignoreErrors_;
+    private File currentFile_;
 
-    public PromptAndLoadFilesTask(UIView view, Collection<File> files,
+    public AnalyzeFilesTask(UIView view, Collection<File> files,
       boolean allowSlowAnalysis, boolean ignoreErrors)
     {
       view_= view;
       files_ = new ArrayList<>(files);
       allowSlowAnalysis_ = allowSlowAnalysis;
       ignoreErrors_ = ignoreErrors;
+      currentFile_ = null;
     }
 
     public boolean getAllowSlowAnalysis()
@@ -61,6 +65,11 @@ public class UICommands
       return view_;
     }
 
+    public File getCurrentFile()
+    {
+      return currentFile_;
+    }
+
     @Override
     protected Void call() throws Exception
     {
@@ -69,6 +78,7 @@ public class UICommands
 
       for (File f : files_)
       {
+        currentFile_ = f;
         updateMessage(String.format("Analyzing %s (%s)",
           f.getName(), f.getParent()));
         if (fileCount > 1)
@@ -87,7 +97,8 @@ public class UICommands
           {
             Platform.runLater(() ->
               view_.getFileListView().getItems().add(scoreItem));
-          } else
+          }
+          else
           {
             if (!ignoreErrors_)
             {
@@ -99,6 +110,7 @@ public class UICommands
         }
       }
 
+      currentFile_ = null;
       updateMessage("Complete");
       updateProgress(0, 0);
       return null;
@@ -137,6 +149,8 @@ public class UICommands
     view.getSectionsTableView().setItems(null);
   }
 
+  // Removes all scores from the list and clears analysis information from
+  // display
   public static void clearScoreItems(UIView view)
   {
     view.getFileListView().getItems().clear();
@@ -167,15 +181,8 @@ public class UICommands
     if (files != null)
     {
       // Unbind properties before use
-      if (view.getProgressBar().progressProperty().isBound())
-      {
-        view.getProgressBar().progressProperty().unbind();
-      }
-
-      if (view.statusProperty().isBound())
-      {
-        view.statusProperty().unbind();
-      }
+      unbindProperty(view.progressProperty());
+      unbindProperty(view.statusProperty());
 
       if (files.size() == 1)
       {
@@ -193,59 +200,7 @@ public class UICommands
     File folder = folderDialog.showDialog(view);
     if (folder != null)
     {
-      // Unbind properties before use
-      if (view.getProgressBar().progressProperty().isBound())
-      {
-        view.getProgressBar().progressProperty().unbind();
-      }
-
-      if (view.statusProperty().isBound())
-      {
-        view.statusProperty().unbind();
-      }
-
-      view.getProgressBar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
-
-      Task<List<File>> walkFilesTask = new Task<List<File>>()
-      {
-        @Override
-        protected List<File> call() throws Exception
-        {
-          List<File> fileList = new ArrayList<>();
-          Files.walkFileTree(Paths.get(folder.toURI()),
-            new SimpleFileVisitor<Path>()
-            {
-              @Override
-              public FileVisitResult visitFile(Path file,
-                BasicFileAttributes attrs)
-              {
-                if (attrs.isRegularFile() && Files.isReadable(file))
-                {
-                  fileList.add(new File(file.toUri()));
-                  updateMessage(String.format("Gathering files (%s) ...",
-                    file.toAbsolutePath()));
-                }
-
-                return FileVisitResult.CONTINUE;
-              }
-            });
-
-          return fileList;
-        }
-      };
-
-      walkFilesTask.setOnFailed(event ->
-        UIView.showError(
-          String.format("Failed to read all of \"%s\".",
-            folder.getAbsolutePath()), "Directory Read Failed"));
-      walkFilesTask.setOnSucceeded(event ->
-      {
-        List<File> files = walkFilesTask.getValue();
-        view.getProgressBar().setProgress(0.0);
-        scoreFilesAsync(view, files, allowSlowAnalysis, true);
-      });
-
-      TaskPool.execute(walkFilesTask);
+      scoreFolderAsync(view, folder, allowSlowAnalysis);
     }
   }
 
@@ -264,6 +219,58 @@ public class UICommands
         clearScoreItemSelection(view);
       }
     }
+  }
+
+  // Runs the given Runnable object on the UI thread if safe to do so or places
+  // it in the UI execution queue to be run on the UI thread with an option to
+  // wait for completion
+  public static void runOnUI(Runnable action, long timeout, TimeUnit timeUnit)
+  {
+    if (action == null)
+    {
+      throw new NullPointerException("action");
+    }
+
+    if (Platform.isFxApplicationThread())
+    {
+      // We're executing in the UI thread, so run synchronously.
+      action.run();
+    }
+    else
+    {
+      // We're executing on a different thread.
+      FutureTask<?> future = new FutureTask<>(action, null);
+      Platform.runLater(future);
+      try
+      {
+        if (timeout > 0)
+        {
+          future.get(timeout, timeUnit);
+        }
+        else
+        {
+          future.get();
+        }
+      }
+      catch (InterruptedException | ExecutionException | TimeoutException e)
+      {
+        // Ignore the error
+      }
+      finally
+      {
+        future.cancel(true);
+      }
+    }
+  }
+
+  public static void runOnUI(Runnable action, long timeoutNanoSeconds)
+  {
+    runOnUI(action, timeoutNanoSeconds, TimeUnit.NANOSECONDS);
+  }
+
+  public static void runOnUI(Runnable action)
+  {
+    runOnUI(action, 0L, TimeUnit.NANOSECONDS);
   }
 
   // Loads the analysis results from the given UIView.ScoreItem object into
@@ -295,6 +302,14 @@ public class UICommands
         }
       }
     }
+  }
+
+  // Utility function for binding a property whether or not it is already bound
+  private static <T> void bindProperty(Property<T> property,
+    ObservableValue<T> value)
+  {
+    unbindProperty(property);
+    property.bind(value);
   }
 
   private static PortableExecutableFileChannel loadPortableExecutable(File file)
@@ -379,11 +394,112 @@ public class UICommands
   private static void scoreFilesAsync(UIView view, List<File> files,
     boolean allowSlowAnalysis, boolean ignoreErrors)
   {
-    PromptAndLoadFilesTask task =
-      new PromptAndLoadFilesTask(view, files, allowSlowAnalysis, ignoreErrors);
+    AnalyzeFilesTask task =
+      new AnalyzeFilesTask(view, files, allowSlowAnalysis, ignoreErrors);
 
-    view.getProgressBar().progressProperty().bind(task.progressProperty());
-    view.statusProperty().bind(task.messageProperty());
+    bindProperty(view.progressProperty(), task.progressProperty());
+    bindProperty(view.statusProperty(), task.messageProperty());
+
+    task.setOnFailed(event ->
+      runOnUI(() ->
+      {
+        File failedFile =
+          ((AnalyzeFilesTask) event.getSource()).getCurrentFile();
+        unbindProperty(view.progressProperty());
+        unbindProperty(view.statusProperty());
+        Throwable e = event.getSource().getException();
+        String errorMessage = "File analysis failed.";
+        if (failedFile != null)
+        {
+          errorMessage = "File analysis failed while processing \"" +
+            failedFile.getAbsolutePath() + "\".";
+        }
+
+        if (e != null)
+        {
+          if (!StringUtil.isNullOrWhiteSpace(e.getMessage()))
+          {
+            errorMessage += " " + e.getMessage();
+          } else
+          {
+            errorMessage += " Encountered an exception of type " +
+              e.getClass().getSimpleName() + '.';
+            e.printStackTrace();
+          }
+        }
+
+        UIView.showError(errorMessage, "Analysis Failure");
+        view.statusProperty().setValue(errorMessage);
+      }));
+
     TaskPool.execute(task);
+  }
+
+  private static void scoreFolderAsync(UIView view, File folder,
+    boolean allowSlowAnalysis)
+  {
+    // Unbind properties before use
+    unbindProperty(view.getProgressBar().progressProperty());
+    unbindProperty(view.statusProperty());
+
+    view.getProgressBar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+
+    Task<List<File>> walkFilesTask = new Task<List<File>>()
+    {
+      @Override
+      protected List<File> call() throws Exception
+      {
+        List<File> fileList = new ArrayList<>();
+        Files.walkFileTree(Paths.get(folder.toURI()),
+          new SimpleFileVisitor<Path>()
+          {
+            @Override
+            public FileVisitResult visitFile(Path file,
+              BasicFileAttributes attrs)
+            {
+              if (attrs.isRegularFile() && Files.isReadable(file))
+              {
+                fileList.add(new File(file.toUri()));
+                updateMessage(String.format("Gathering files (%s) ...",
+                  file.toAbsolutePath()));
+              }
+
+              return FileVisitResult.CONTINUE;
+            }
+          });
+
+        return fileList;
+      }
+    };
+
+    walkFilesTask.setOnFailed(event ->
+    {
+      unbindProperty(view.statusProperty());
+      unbindProperty(view.progressProperty());
+
+      UIView.showError(
+        String.format("Failed to read all of \"%s\".",
+          folder.getAbsolutePath()), "Directory Read Failed");
+    });
+
+    walkFilesTask.setOnSucceeded(event ->
+    {
+      unbindProperty(view.progressProperty());
+      List<File> files = walkFilesTask.getValue();
+      view.getProgressBar().setProgress(0.0);
+      scoreFilesAsync(view, files, allowSlowAnalysis, true);
+    });
+
+    view.statusProperty().bind(walkFilesTask.messageProperty());
+    TaskPool.execute(walkFilesTask);
+  }
+
+  // Utility method for unbinding a property only if it's already bound
+  private static void unbindProperty(Property<?> property)
+  {
+    if (property.isBound())
+    {
+      property.unbind();
+    }
   }
 }

@@ -45,7 +45,6 @@ public class SectionPermissionsScore extends Score
   @Override
   public boolean isSoftMalwareIndication()
   {
-    // #TODO: make sure this is the most logical way of doing this
     return (getValue() > 0);
   }
 

@@ -68,7 +68,7 @@ public class PortableExecutableScore extends AggregateScore
           StringImportsScore.TITLE, p))));
     }
 
-    // #TODO:
+    // #TODO (if I have time):
     //    * valid entry point
     //    * DLL-indicated characteristic type without a DllMain export
   }

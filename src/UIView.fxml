@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" styleClass="root-container" stylesheets="@UIStyle.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <FlowPane id="button-bar">
+         <children>
+            <Button mnemonicParsing="false" text="Add File" />
+            <Button mnemonicParsing="false" text="Add Folder" />
+            <Button mnemonicParsing="false" text="Remove" />
+            <Button mnemonicParsing="false" text="Clear" />
+            <Button mnemonicParsing="false" text="Cancel" />
+            <CheckBox id="analyze-text-checkbox" mnemonicParsing="false" text="Analyze text" />
+         </children>
+      </FlowPane>
+      <SplitPane dividerPositions="0.5" prefHeight="200.0" VBox.vgrow="ALWAYS">
+         <items>
+            <ListView />
+            <TabPane styleClass="floating" tabClosingPolicy="UNAVAILABLE">
+              <tabs>
+                <Tab text="Malware Score">
+                     <content>
+                        <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="200.0" prefWidth="200.0">
+                           <items>
+                              <TreeTableView prefHeight="200.0" prefWidth="200.0">
+                                <columns>
+                                  <TreeTableColumn prefWidth="75.0" text="C1" />
+                                  <TreeTableColumn prefWidth="75.0" text="C2" />
+                                </columns>
+                              </TreeTableView>
+                              <ListView prefHeight="200.0" prefWidth="200.0" />
+                           </items>
+                        </SplitPane>
+                     </content>
+                  </Tab>
+                <Tab text="Imports">
+                     <content>
+                        <TableView prefHeight="200.0" prefWidth="200.0">
+                          <columns>
+                            <TableColumn editable="false" prefWidth="75.0" text="Name" />
+                            <TableColumn prefWidth="75.0" text="Library" />
+                          </columns>
+                        </TableView>
+                     </content>
+                  </Tab>
+                  <Tab text="Sections">
+                     <content>
+                        <TableView prefHeight="200.0" prefWidth="200.0">
+                          <columns>
+                            <TableColumn editable="false" prefWidth="60.0" text="Name" />
+                            <TableColumn editable="false" prefWidth="78.0" text="Permissions" />
+                              <TableColumn editable="false" prefWidth="79.0" text="Virtual Size" />
+                              <TableColumn editable="false" prefWidth="65.0" text="Raw Size" />
+                              <TableColumn editable="false" prefWidth="85.0" text="Virtual Offset" />
+                              <TableColumn editable="false" prefWidth="83.0" text="File Offset" />
+                          </columns>
+                        </TableView>
+                     </content>
+                  </Tab>
+              </tabs>
+            </TabPane>
+         </items>
+      </SplitPane>
+      <HBox alignment="CENTER_LEFT" styleClass="status-bar">
+         <children>
+            <ProgressBar minHeight="-Infinity" progress="0.0" />
+            <Label maxWidth="1.7976931348623157E308" styleClass="status-label" text="Ready" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
+   </children>
+</VBox>

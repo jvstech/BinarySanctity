@@ -26,6 +26,8 @@ public abstract class Score
     return this;
   }
 
+  // Returns the instance-level of this score (for scores which are sub-scores
+  // of other scores)
   protected int getDepth()
   {
     if (parent_ == null)
@@ -42,6 +44,11 @@ public abstract class Score
     return this;
   }
 
+  // Returns a string describing how this score analyzer has characterized the
+  // given executable file (or a relevant portion thereof). By default, this is
+  // based on the score value and mapped to a series of characterizations, so
+  // different scores could indicate different types or levels of
+  // characterizations.
   public String getCharacterization()
   {
     if (characterization_.isEmpty())
@@ -56,6 +63,7 @@ public abstract class Score
     return entry.getValue();
   }
 
+  // Sets the analysis characterization description up to the given score value.
   protected Score setCharacterization(int upperThreshold,
                                       String characterization)
   {
@@ -83,6 +91,8 @@ public abstract class Score
 
   public abstract String getTitle();
   public abstract String getDescription();
+  // Returns a true/false value indicating whether or not the given executable
+  // file could be (but is not definitively) indicated to be malware
   public abstract boolean isSoftMalwareIndication();
 
   @Override

@@ -197,8 +197,8 @@ public class ConsoleCommands
         }
         catch (IOException e)
         {
-          // #TODO: maybe emit a application-wide signal noting this file
-          //    couldn't be read
+          System.err.println("I/O error reading " + arg + ": " +
+            e.getMessage());
         }
       }
       else

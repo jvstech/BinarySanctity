@@ -140,7 +140,7 @@ public class ImportDirectory implements Header
         "of bounds. (pos: %d; size: %d)", iatRvaPos, peFile_.size()));
     }
 
-    if (nameRVA_.isValid(peFile))
+    if (nameRVA_ != null && nameRVA_.isValid(peFile))
     {
       name_ = peFile_.readCString(nameRVA_.getFilePosition());
     }

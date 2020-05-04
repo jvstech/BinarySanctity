@@ -29,7 +29,7 @@ public class EntropyScore extends Score
       startPosition, dataLength);
     entropyValue_ = entropy.getValue();
     // Exponentially interpolate the entropy value and normalize the score to a
-    // max value of 50, tossing out any entropy values under 5.9.
+    // max value of 50, tossing out any entropy values under 6.0.
     if (entropyValue_ < MIN_SCORE)
     {
       setValue(0);
@@ -86,18 +86,22 @@ public class EntropyScore extends Score
   @Override
   public String getCharacterization()
   {
-    // #TODO: This could be made much more robust with Monte Carlo pi
-    //  calculation (and another calculation I can't remember the name of)
+    // This could be made much more robust with Monte Carlo pi
+    // calculation (and another calculation I can't remember the name of).
+    // Unfortunately, this will have to wait for comp sci II or for someone else
+    // to pick up this project and run with it.
 
-    if (entropyValue_ >= MIN_SCORE && entropyValue_ < 7.0)
+    if (MathUtil.floatGE(entropyValue_, MIN_SCORE) &&
+      MathUtil.floatLT(entropyValue_, 7.0))
     {
       return "possibly compressed";
     }
-    else if (entropyValue_ >= 7.0 && entropyValue_ < 8.0)
+    else if (MathUtil.floatGE(entropyValue_ ,7.0) &&
+      MathUtil.floatLT(entropyValue_, 8.0))
     {
       return "possibly encrypted";
     }
-    else if (entropyValue_ >= 8.0)
+    else if (MathUtil.floatGE(entropyValue_, 8.0))
     {
       return "maximum entropy, encrypted";
     }

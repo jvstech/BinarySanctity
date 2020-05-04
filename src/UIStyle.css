@@ -1,3 +1,11 @@
+/**
+/*  @title          Binary Sanctity
+/*  @author         Jonathan Smith
+/*  Course Section: CMIS201-HYB2 (Seidel)
+/*  @file           UIView.css
+/*  @description    Styling rules for JavaFX elements of Binary Sanctity
+ **/
+
 /* Custom classes and IDs */
 
 .root-container
@@ -5,6 +13,8 @@
     -fx-alignment: center;
     -fx-padding: 5;
     -fx-spacing: 5;
+    -fx-pref-width: 800px;
+    -fx-pref-height: 600px;
 }
 
 #button-bar
@@ -236,18 +246,23 @@ VBox
 
 .table-view,
 .table-view .column-header,
-.table-view *.filler
+.table-view *.filler,
+.tree-table-view,
+.tree-table-view .column-header,
+.tree-table-view *.filler
 {
     -fx-background-color: #3C3F41;
     -fx-text-fill: white;
 }
 
-.table-view *.table-cell
+.table-view *.table-cell,
+.tree-table-view *.tree-table-cell
 {
     -fx-text-fill: white;
 }
 
-.table-row-cell
+.table-row-cell,
+.tree-table-row-cell
 {
     -fx-background-color: #3C3F41;
     -fx-border-color: #3C3F41;
@@ -256,17 +271,22 @@ VBox
 }
 
 .table-view *.table-cell:selected,
-.table-row-cell:selected
+.table-row-cell:selected,
+.tree-table-view *.tree-table-cell:selected,
+.tree-table-row-cell:selected
 {
     -fx-background-color: #4C5052;
 }
 
-.table-view .column-header .label
+.table-view .column-header .label,
+.tree-table-view .column-header .label
 {
     -fx-alignment: CENTER_LEFT;
+    -fx-padding: 0 0 0 5;
 }
 
-.table-view .column-header-background .nested-column-header .table-column
+.table-view .column-header-background .nested-column-header .table-column,
+.tree-table-view .column-header-background .nested-column-header .table-column
 {
     -fx-border-color: transparent #BABAA7 transparent #BABAA7;
 }

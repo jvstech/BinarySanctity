@@ -12,6 +12,8 @@ import java.nio.channels.FileChannel;
 
 public class DataUtil
 {
+  // Don't remember why I wrote this... This is just a fancy way of saying
+  // 'pos < referenceSize' with checks for zero-values.
   public static boolean isInBounds(long pos, long referenceSize)
   {
     if (referenceSize < 0)

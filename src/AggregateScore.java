@@ -73,6 +73,7 @@ public abstract class AggregateScore extends Score
     return Collections.unmodifiableList(scores_);
   }
 
+  // Returns all child scores that have a value > 0
   protected Score[] getNonZeroScores()
   {
     return scores_.stream()
@@ -80,6 +81,7 @@ public abstract class AggregateScore extends Score
       .toArray(Score[]::new);
   }
 
+  // Returns all child scores that have made soft-positive malware indications
   protected Score[] getMalwareIndicatedScores()
   {
     return scores_.stream()
