@@ -119,35 +119,6 @@ public class UICommands
     }
   }
 
-  // Nested task class that forwards progress and message updates from a child
-  // task
-  private static abstract class TransparentTask<T> extends Task<T>
-  {
-    protected void forwardBind(Task<?> task)
-    {
-      task.progressProperty().addListener(this::progressHandler);
-      task.messageProperty().addListener(this::messageHandler);
-    }
-
-    protected void forwardUnbind(Task<?> task)
-    {
-      task.progressProperty().removeListener(this::progressHandler);
-      task.messageProperty().removeListener(this::messageHandler);
-    }
-
-    protected void messageHandler(ObservableValue<? extends String> observable,
-      String oldValue, String newValue)
-    {
-      updateMessage(newValue);
-    }
-
-    protected void progressHandler(ObservableValue<? extends Number> observable,
-      Number oldValue, Number newValue)
-    {
-      updateProgress(newValue.doubleValue(), 1.0);
-    }
-  }
-
   // Keeps track of currently running tasks
   private static final Map<Runnable, Thread> RunningTaskMap =
     new ConcurrentHashMap<>();
@@ -237,7 +208,7 @@ public class UICommands
       return;
     }
 
-    Task<Set<String>> wrapperTask = new TransparentTask<Set<String>>()
+    Task<Set<String>> wrapperTask = new Task<Set<String>>()
     {
       @Override
       protected Set<String> call() throws Exception
@@ -257,7 +228,8 @@ public class UICommands
           if (f.isDirectory())
           {
             folderPaths.add(f.getAbsolutePath());
-          } else
+          }
+          else
           {
             filePaths.add(f.getAbsolutePath());
           }
@@ -268,12 +240,7 @@ public class UICommands
         {
           if (!Thread.currentThread().isInterrupted())
           {
-            Map.Entry<Future<?>, Task<?>> futureFolderTask =
-              scoreFolderAsync(view, new File(folderPath), analyzeText);
-            Task<?> folderTask = futureFolderTask.getValue();
-            forwardBind(folderTask);
-            futureFolderTask.getKey().get();
-            forwardUnbind(folderTask);
+            scoreFolderAsync(view, new File(folderPath), analyzeText).get();
           }
         }
 
@@ -282,12 +249,7 @@ public class UICommands
           List<File> files = filePaths.stream()
             .map(File::new)
             .collect(Collectors.toList());
-          Map.Entry<Future<?>, AnalyzeFilesTask> futureFilesTask =
-            scoreFilesAsync(view, files, analyzeText, false);
-          AnalyzeFilesTask filesTask = futureFilesTask.getValue();
-          forwardBind(filesTask);
-          futureFilesTask.getKey().get();
-          forwardUnbind(filesTask);
+          scoreFilesAsync(view, files, analyzeText, false).get();
         }
 
         return notFoundPaths;
@@ -295,21 +257,12 @@ public class UICommands
     };
 
     EventHandler<WorkerStateEvent> taskEndedEvent = event ->
-    {
-      unbindProperty(view.statusProperty());
-      unbindProperty(view.progressProperty());
-      runOnUI(() ->
-      {
-        view.getProgressBar().setProgress(0.0);
-        showPathsNotFound(wrapperTask.getValue());
-      });
-    };
+      showPathsNotFound(wrapperTask.getValue());
 
     runOnUI(() ->
     {
       wrapperTask.setOnSucceeded(taskEndedEvent);
       wrapperTask.setOnFailed(taskEndedEvent);
-      bindTaskUpdates(view, wrapperTask);
       TaskPool.execute(wrapperTask);
     });
 
@@ -517,6 +470,7 @@ public class UICommands
     return peFile;
   }
 
+  // Generic utility function for creating a tuple
   private static <T1, T2> Map.Entry<T1, T2> makePair(T1 item1, T2 item2)
   {
     return new AbstractMap.SimpleEntry<>(item1, item2);
@@ -542,7 +496,7 @@ public class UICommands
       }
     }
 
-    return new AbstractMap.SimpleEntry<>(parsed, resultArgs);
+    return makePair(parsed, resultArgs);
   }
 
   private static UIView.ScoreItem readAndScoreExecutableFile(UIView view,
@@ -599,9 +553,8 @@ public class UICommands
     return scoreItem;
   }
 
-  private static Map.Entry<Future<?>, AnalyzeFilesTask> scoreFilesAsync(
-    UIView view, List<File> files, boolean allowSlowAnalysis,
-    boolean ignoreErrors)
+  private static Future<?> scoreFilesAsync(UIView view, List<File> files,
+    boolean allowSlowAnalysis, boolean ignoreErrors)
   {
     AnalyzeFilesTask task =
       new AnalyzeFilesTask(view, files, allowSlowAnalysis, ignoreErrors);
@@ -642,12 +595,11 @@ public class UICommands
         view.getProgressBar().setProgress(0.0);
       }));
 
-    Future<?> future = TaskPool.submit(task);
-    return makePair(future, task);
+    return TaskPool.submit(task);
   }
 
-  private static Map.Entry<Future<?>, Task<?>> scoreFolderAsync(UIView view,
-    File folder, boolean allowSlowAnalysis)
+  private static Future<?> scoreFolderAsync(UIView view, File folder,
+    boolean allowSlowAnalysis)
   {
     // Unbind properties before use
     unbindProperty(view.getProgressBar().progressProperty());
@@ -702,9 +654,8 @@ public class UICommands
       scoreFilesAsync(view, files, allowSlowAnalysis, true);
     });
 
-    bindProperty(view.statusProperty(), walkFilesTask.messageProperty());
-    Future<?> future = TaskPool.submit(walkFilesTask);
-    return makePair(future, walkFilesTask);
+    bindTaskUpdates(view, walkFilesTask);
+    return TaskPool.submit(walkFilesTask);
   }
 
   // Utility function for showing a warning alert for missing file or folder
