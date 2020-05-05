@@ -7,10 +7,13 @@
 //!                 window and controls.
 //!
 
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.Property;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.ProgressBar;
 import javafx.stage.DirectoryChooser;
@@ -22,12 +25,11 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class UICommands
 {
@@ -55,6 +57,11 @@ public class UICommands
       return allowSlowAnalysis_;
     }
 
+    public File getCurrentFile()
+    {
+      return currentFile_;
+    }
+
     public boolean getIgnoreErrors()
     {
       return ignoreErrors_;
@@ -63,11 +70,6 @@ public class UICommands
     public UIView getView()
     {
       return view_;
-    }
-
-    public File getCurrentFile()
-    {
-      return currentFile_;
     }
 
     @Override
@@ -117,6 +119,35 @@ public class UICommands
     }
   }
 
+  // Nested task class that forwards progress and message updates from a child
+  // task
+  private static abstract class TransparentTask<T> extends Task<T>
+  {
+    protected void forwardBind(Task<?> task)
+    {
+      task.progressProperty().addListener(this::progressHandler);
+      task.messageProperty().addListener(this::messageHandler);
+    }
+
+    protected void forwardUnbind(Task<?> task)
+    {
+      task.progressProperty().removeListener(this::progressHandler);
+      task.messageProperty().removeListener(this::messageHandler);
+    }
+
+    protected void messageHandler(ObservableValue<? extends String> observable,
+      String oldValue, String newValue)
+    {
+      updateMessage(newValue);
+    }
+
+    protected void progressHandler(ObservableValue<? extends Number> observable,
+      Number oldValue, Number newValue)
+    {
+      updateProgress(newValue.doubleValue(), 1.0);
+    }
+  }
+
   // Keeps track of currently running tasks
   private static final Map<Runnable, Thread> RunningTaskMap =
     new ConcurrentHashMap<>();
@@ -138,6 +169,9 @@ public class UICommands
       RunningTaskMap.put(r, t);
     }
   };
+
+  // Flag to keep track of whether or not start-up arguments were parsed
+  private static boolean startupHandled = false;
 
   // Clears analysis information from display
   public static void clearScoreItemSelection(UIView view)
@@ -162,6 +196,123 @@ public class UICommands
   {
     stopAllTasks();
     TaskPool.shutdownNow();
+  }
+
+  // Analyzes any files or folders specified as command-line arguments
+  public static void handle(UIView view, Application.Parameters cmdLineArgs)
+  {
+    if (startupHandled || cmdLineArgs == null ||
+      cmdLineArgs.getRaw().isEmpty())
+    {
+      return;
+    }
+
+    startupHandled = true;
+    // Strip out the "--graphical" argument if one was present
+    List<String> args = cmdLineArgs.getUnnamed().stream()
+      .filter(a -> !a.equals("--graphical"))
+      .collect(Collectors.toList());
+
+    Map.Entry<Map<String, String>, List<String>> parsedArgMap =
+      parseFlagArgs(args,
+        "analyze-text",
+        "no-analyze-text");
+    Map<String, String> parsedArgs = parsedArgMap.getKey();
+    args = parsedArgMap.getValue();
+
+    final boolean noAnalyzeText = parsedArgs.containsKey("no-analyze-text");
+    // "--no-analyze-text" takes precedence over "--analyze-text" if both are
+    // present on the command line
+    final boolean analyzeText = (parsedArgs.containsKey("analyze-text") &&
+      !noAnalyzeText);
+    final List<String> finalArgs = args;
+
+    // Update the "Analyze text" checkbox if "--no-analyze-text" is explicitly
+    // passed on the command line
+    runOnUI(() -> view.getAnalyzeTextCheckBox().setSelected(!noAnalyzeText));
+
+    // If there are no files or folders listed, we're done.
+    if (args.isEmpty())
+    {
+      return;
+    }
+
+    Task<Set<String>> wrapperTask = new TransparentTask<Set<String>>()
+    {
+      @Override
+      protected Set<String> call() throws Exception
+      {
+        Set<String> notFoundPaths = new TreeSet<>();
+        Set<String> filePaths = new LinkedHashSet<>();
+        Set<String> folderPaths = new LinkedHashSet<>();
+        for (String path : finalArgs)
+        {
+          File f = new File(path);
+          if (!f.exists())
+          {
+            notFoundPaths.add(path);
+            continue;
+          }
+
+          if (f.isDirectory())
+          {
+            folderPaths.add(f.getAbsolutePath());
+          } else
+          {
+            filePaths.add(f.getAbsolutePath());
+          }
+        }
+
+        // Handle folders first followed by files
+        for (String folderPath : folderPaths)
+        {
+          if (!Thread.currentThread().isInterrupted())
+          {
+            Map.Entry<Future<?>, Task<?>> futureFolderTask =
+              scoreFolderAsync(view, new File(folderPath), analyzeText);
+            Task<?> folderTask = futureFolderTask.getValue();
+            forwardBind(folderTask);
+            futureFolderTask.getKey().get();
+            forwardUnbind(folderTask);
+          }
+        }
+
+        if (!filePaths.isEmpty())
+        {
+          List<File> files = filePaths.stream()
+            .map(File::new)
+            .collect(Collectors.toList());
+          Map.Entry<Future<?>, AnalyzeFilesTask> futureFilesTask =
+            scoreFilesAsync(view, files, analyzeText, false);
+          AnalyzeFilesTask filesTask = futureFilesTask.getValue();
+          forwardBind(filesTask);
+          futureFilesTask.getKey().get();
+          forwardUnbind(filesTask);
+        }
+
+        return notFoundPaths;
+      }
+    };
+
+    EventHandler<WorkerStateEvent> taskEndedEvent = event ->
+    {
+      unbindProperty(view.statusProperty());
+      unbindProperty(view.progressProperty());
+      runOnUI(() ->
+      {
+        view.getProgressBar().setProgress(0.0);
+        showPathsNotFound(wrapperTask.getValue());
+      });
+    };
+
+    runOnUI(() ->
+    {
+      wrapperTask.setOnSucceeded(taskEndedEvent);
+      wrapperTask.setOnFailed(taskEndedEvent);
+      bindTaskUpdates(view, wrapperTask);
+      TaskPool.execute(wrapperTask);
+    });
+
   }
 
   public static void promptAndLoadFiles(UIView view, boolean allowSlowAnalysis)
@@ -304,12 +455,41 @@ public class UICommands
     }
   }
 
+  // Utility function for converting an argument string into a compatible
+  // regular expression in the form of "--arg-name" or "-arg-name"
+  private static String asArg(String s)
+  {
+    if (s == null)
+    {
+      return "";
+    }
+
+    return String.format("^\\-{1,2}%s$", Pattern.quote(s));
+  }
+
   // Utility function for binding a property whether or not it is already bound
   private static <T> void bindProperty(Property<T> property,
     ObservableValue<T> value)
   {
-    unbindProperty(property);
-    property.bind(value);
+    runOnUI(() ->
+    {
+      unbindProperty(property);
+      property.bind(value);
+    });
+  }
+
+  // Utility for binding the progress and message properties of a task to the
+  // UI's progress and status bars
+  private static void bindTaskUpdates(UIView view, Task<?> task)
+  {
+    bindProperty(view.progressProperty(), task.progressProperty());
+    bindProperty(view.statusProperty(), task.messageProperty());
+  }
+
+  // Utility for binding the progress and message properties of one task to the
+  // progress and message properties of another task
+  private static void bindTaskUpdates(Task<?> sourceTask, Task<?> destTask)
+  {
   }
 
   private static PortableExecutableFileChannel loadPortableExecutable(File file)
@@ -335,6 +515,34 @@ public class UICommands
 
     peFile = PortableExecutableFileChannel.create(file);
     return peFile;
+  }
+
+  private static <T1, T2> Map.Entry<T1, T2> makePair(T1 item1, T2 item2)
+  {
+    return new AbstractMap.SimpleEntry<>(item1, item2);
+  }
+
+  private static Map.Entry<Map<String, String>, List<String>> parseFlagArgs(
+    List<String> unnamedArgs, String... argNames)
+  {
+    List<String> resultArgs = new ArrayList<>(unnamedArgs);
+    Map<String, String> parsed = new TreeMap<>();
+    for (String argName : argNames)
+    {
+      String argMatch = resultArgs.stream()
+        .filter(a -> Pattern.matches(asArg(argName), a))
+        .findFirst()
+        .orElse(null);
+      if (argMatch != null)
+      {
+        resultArgs = resultArgs.stream()
+          .filter(a -> !a.equals(argMatch))
+          .collect(Collectors.toList());
+        parsed.put(argName, argMatch);
+      }
+    }
+
+    return new AbstractMap.SimpleEntry<>(parsed, resultArgs);
   }
 
   private static UIView.ScoreItem readAndScoreExecutableFile(UIView view,
@@ -391,8 +599,9 @@ public class UICommands
     return scoreItem;
   }
 
-  private static void scoreFilesAsync(UIView view, List<File> files,
-    boolean allowSlowAnalysis, boolean ignoreErrors)
+  private static Map.Entry<Future<?>, AnalyzeFilesTask> scoreFilesAsync(
+    UIView view, List<File> files, boolean allowSlowAnalysis,
+    boolean ignoreErrors)
   {
     AnalyzeFilesTask task =
       new AnalyzeFilesTask(view, files, allowSlowAnalysis, ignoreErrors);
@@ -433,17 +642,19 @@ public class UICommands
         view.getProgressBar().setProgress(0.0);
       }));
 
-    TaskPool.execute(task);
+    Future<?> future = TaskPool.submit(task);
+    return makePair(future, task);
   }
 
-  private static void scoreFolderAsync(UIView view, File folder,
-    boolean allowSlowAnalysis)
+  private static Map.Entry<Future<?>, Task<?>> scoreFolderAsync(UIView view,
+    File folder, boolean allowSlowAnalysis)
   {
     // Unbind properties before use
     unbindProperty(view.getProgressBar().progressProperty());
     unbindProperty(view.statusProperty());
 
-    view.getProgressBar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+    runOnUI(() ->
+      view.getProgressBar().setProgress(ProgressBar.INDETERMINATE_PROGRESS));
 
     Task<List<File>> walkFilesTask = new Task<List<File>>()
     {
@@ -491,16 +702,31 @@ public class UICommands
       scoreFilesAsync(view, files, allowSlowAnalysis, true);
     });
 
-    view.statusProperty().bind(walkFilesTask.messageProperty());
-    TaskPool.execute(walkFilesTask);
+    bindProperty(view.statusProperty(), walkFilesTask.messageProperty());
+    Future<?> future = TaskPool.submit(walkFilesTask);
+    return makePair(future, walkFilesTask);
+  }
+
+  // Utility function for showing a warning alert for missing file or folder
+  // paths
+  private static void showPathsNotFound(Collection<String> notFoundPaths)
+  {
+    if (notFoundPaths != null && !notFoundPaths.isEmpty())
+    {
+      UIView.showError("The following paths were not found:\n\n" +
+        String.join("\n", notFoundPaths), "Paths Not Found");
+    }
   }
 
   // Utility method for unbinding a property only if it's already bound
   private static void unbindProperty(Property<?> property)
   {
-    if (property.isBound())
+    runOnUI(() ->
     {
-      property.unbind();
-    }
+      if (property.isBound())
+      {
+        property.unbind();
+      }
+    });
   }
 }

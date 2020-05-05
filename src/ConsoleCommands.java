@@ -63,12 +63,18 @@ public class ConsoleCommands
     // The first argument is the "command" argument. Extract it and build a new
     // array containing the remaining arguments.
     String commandArg = args[0].substring(1);
+    if (commandArg.startsWith("-"))
+    {
+      commandArg = commandArg.substring(1);
+    }
+
     String[] nextArgs = Arrays.stream(args)
       .skip(1)
       .toArray(String[]::new);
     switch (commandArg)
     {
       case "sectionNames":
+      case "section-names":
         exitCode_ = showSectionNames(nextArgs);
         return true;
       case "imports":

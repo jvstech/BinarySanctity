@@ -8,7 +8,6 @@
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-
 import java.awt.*;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -90,6 +89,7 @@ public class BinarySanctity extends Application
 
     Help.about();
     view = new UIView();
+    view.setOnShown(event -> UICommands.handle(view, getParameters()));
     view.show();
   }
 }

@@ -502,6 +502,11 @@ public class UIView extends Stage
     return clearButton_;
   }
 
+  public CheckBox getAnalyzeTextCheckBox()
+  {
+    return analyzeTextCheckBox_;
+  }
+
   public ListView<ScoreItem> getFileListView()
   {
     return fileListView_;
