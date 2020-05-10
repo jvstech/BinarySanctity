@@ -13,30 +13,40 @@ public class StringUtil
 {
   private static HashMap<String, Pattern> compiledPatterns = new HashMap<>();
 
-  // Adds newlines to strings to wrap long text without breaking words
-  public static String wordWrap(String s, int columns, int startPosition)
+  // Compares two strings, even if either of them are null
+  public static int compare(String a, String b)
   {
-    StringBuilder sb = new StringBuilder(s);
-    int i = startPosition;
-    while (i + columns < sb.length() &&
-      (i = sb.lastIndexOf(" ", i + columns)) != -1)
+    if (equals(a, b))
     {
-      sb.replace(i, i + 1, "\n");
+      return 0;
     }
 
-    return sb.toString();
+    if (a == null)
+    {
+      return Integer.MAX_VALUE;
+    }
+    else if (b == null)
+    {
+      return Integer.MIN_VALUE;
+    }
+
+    return a.compareTo(b);
   }
 
-  // Adds newlines to strings to wrap long text without breaking words
-  public static String wordWrap(String s, int columns)
+  // Compares two strings for equality, even if either of them are null
+  public static boolean equals(String a, String b)
   {
-    return wordWrap(s, columns, 0);
-  }
+    if (a == null && b == null)
+    {
+      return true;
+    }
+    else if ((a == null) != (b == null))
+    {
+      // One of the strings is null.
+      return false;
+    }
 
-  // Adds newlines to strings to wrap long text without breaking words
-  public static String wordWrap(String s)
-  {
-    return wordWrap(s, 80);
+    return a.equals(b);
   }
 
   public static String escape(String s, boolean full)
@@ -94,42 +104,6 @@ public class StringUtil
     return escape(s, true);
   }
 
-  // Returns true if a string is empty or consists of nothing but whitespace
-  public static boolean isWhiteSpace(String s)
-  {
-    if (s == null)
-    {
-      return false;
-    }
-
-    if (s.isEmpty())
-    {
-      return true;
-    }
-
-    for (int i = 0; i < s.length(); ++i)
-    {
-      if (!Character.isWhitespace(s.charAt(i)))
-      {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  // Returns true of a string is null or empty
-  public static boolean isNullOrEmpty(String s)
-  {
-    return (s == null || s.isEmpty());
-  }
-
-  // Returns true if a string is null, empty, or only whitespace
-  public static boolean isNullOrWhiteSpace(String s)
-  {
-    return (s == null || isWhiteSpace(s));
-  }
-
   // Returns true if a string matches the given regex pattern
   public static boolean isMatch(String s, String pattern, boolean compiled)
   {
@@ -160,5 +134,67 @@ public class StringUtil
   public static boolean isMatch(String s, String pattern)
   {
     return isMatch(s, pattern, false);
+  }
+
+  // Returns true of a string is null or empty
+  public static boolean isNullOrEmpty(String s)
+  {
+    return (s == null || s.isEmpty());
+  }
+
+  // Returns true if a string is null, empty, or only whitespace
+  public static boolean isNullOrWhiteSpace(String s)
+  {
+    return (s == null || isWhiteSpace(s));
+  }
+
+  // Returns true if a string is empty or consists of nothing but whitespace
+  public static boolean isWhiteSpace(String s)
+  {
+    if (s == null)
+    {
+      return false;
+    }
+
+    if (s.isEmpty())
+    {
+      return true;
+    }
+
+    for (int i = 0; i < s.length(); ++i)
+    {
+      if (!Character.isWhitespace(s.charAt(i)))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Adds newlines to strings to wrap long text without breaking words
+  public static String wordWrap(String s, int columns, int startPosition)
+  {
+    StringBuilder sb = new StringBuilder(s);
+    int i = startPosition;
+    while (i + columns < sb.length() &&
+      (i = sb.lastIndexOf(" ", i + columns)) != -1)
+    {
+      sb.replace(i, i + 1, "\n");
+    }
+
+    return sb.toString();
+  }
+
+  // Adds newlines to strings to wrap long text without breaking words
+  public static String wordWrap(String s, int columns)
+  {
+    return wordWrap(s, columns, 0);
+  }
+
+  // Adds newlines to strings to wrap long text without breaking words
+  public static String wordWrap(String s)
+  {
+    return wordWrap(s, 80);
   }
 }

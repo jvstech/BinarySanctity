@@ -18,7 +18,7 @@ public class PEFileScoreTests
   void malwareTests()
     throws Exception
   {
-    for (String malwareName : getMalwareFileNames())
+    for (String malwareName : TestUtil.getMalwareFileNames())
     {
       PortableExecutableFileChannel peFile =
         PortableExecutableFileChannel.create(
@@ -30,13 +30,5 @@ public class PEFileScoreTests
     }
   }
 
-  private static String[] getMalwareFileNames()
-  {
-    return new String[]
-      {
-        "Backdoor.Win32.Banito.ps.b64",
-        "UDS.DangerousObject.Multi.Generic.b64",
-        "Backdoor.Win32.Hupigon.buwj.b64"
-      };
-  }
+
 }

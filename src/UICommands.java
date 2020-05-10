@@ -19,8 +19,9 @@ import javafx.scene.control.ProgressBar;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.WindowEvent;
-import java.io.File;
-import java.io.IOException;
+
+import java.beans.XMLEncoder;
+import java.io.*;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -167,6 +168,95 @@ public class UICommands
   {
     stopAllTasks();
     TaskPool.shutdownNow();
+  }
+
+  public static void exportScores(UIView view, boolean all, boolean useXml)
+  {
+    if (!all &&
+      view.getFileListView().getSelectionModel().getSelectedIndices().isEmpty())
+    {
+      // Nothing selected, so do nothing.
+      return;
+    }
+
+    File outputFile = promptForSave(view, useXml ? "Save XML" : "Save Report",
+      useXml ? "XML files|*.xml|All files|*" : "Text files|*.txt|All files|*");
+    if (outputFile == null)
+    {
+      return;
+    }
+
+    try
+    {
+      // Ensure the file exists before creating an output stream
+      outputFile.createNewFile();
+      String outputString;
+      if (all)
+      {
+        // Collect the reports
+        Report[] reports =
+          view.getFileListView().getItems().stream()
+            .filter(s -> !s.hasException())
+            .map(s -> new Report(s.getFilePath(), s.getScore()))
+            .toArray(Report[]::new);
+        if (useXml)
+        {
+          // Serialize them with a temporary XML encoder
+          ByteArrayOutputStream os = new ByteArrayOutputStream();
+          XMLEncoder encoder = new XMLEncoder(os);
+          encoder.writeObject(reports);
+          encoder.close();
+          outputString = os.toString();
+        }
+        else
+        {
+          outputString = String.join(
+            "\n\n----------------------------------------" +
+            "----------------------------------------\n\n",
+            Arrays.stream(reports)
+              .map(Report::toString)
+              .toArray(String[]::new));
+        }
+      }
+      else
+      {
+        UIView.ScoreItem scoreItem =
+          view.getFileListView().getSelectionModel().getSelectedItem();
+        PortableExecutableScore outputScore = scoreItem.getScore();
+        Report report = new Report(scoreItem.getFilePath(), outputScore);
+        outputString = useXml ? report.toXml() : report.toString();
+      }
+
+      // Write the output data
+      FileOutputStream os = new FileOutputStream(outputFile);
+      PrintWriter w = new PrintWriter(os);
+      w.print(outputString);
+      w.flush();
+      os.close();
+      UIView.showInformation("Exported to " +
+        outputFile.getAbsolutePath(),
+        useXml ? "Exported XML" : "Exported Report");
+    }
+    catch (FileNotFoundException e)
+    {
+      // Print a stack trace since this isn't normal.
+      e.printStackTrace();
+    }
+    catch (IOException e)
+    {
+      UIView.showError("Error while trying to save file: " + e.getMessage(),
+        "File Save Error");
+    }
+  }
+
+  public static void exportText(UIView view, boolean all)
+  {
+    exportScores(view, all, false);
+  }
+
+  public static void exportXml(UIView view, boolean all)
+  {
+    exportScores(view, all, true);
   }
 
   // Analyzes any files or folders specified as command-line arguments
@@ -497,6 +587,53 @@ public class UICommands
     }
 
     return makePair(parsed, resultArgs);
+  }
+
+  private static File promptForSave(UIView view, String title,
+    String extensions)
+  {
+    if (StringUtil.isNullOrWhiteSpace(title))
+    {
+      title = "Save File";
+    }
+
+    if (StringUtil.isNullOrWhiteSpace(extensions))
+    {
+      extensions = "All files|*";
+    }
+
+    // Split the extensions by the pipe character
+    ArrayList<String> extPairs =
+      new ArrayList<>(Arrays.asList(extensions.split("\\|")));
+    // The extension string is always expected to be in the form of
+    // "description1|ext1;ext2|description2|ext3;ext4;ext5", so there should
+    // always be an even number of pipe-separated elements. If not, add an "all
+    // files" extension to the end.
+    if (extPairs.size() % 2 != 0)
+    {
+      extPairs.add("*");
+    }
+
+    // Create and configure a FileChooser object
+    FileChooser fileDialog = new FileChooser();
+    fileDialog.setTitle(title);
+    for (int i = 0; i < extPairs.size(); i += 2)
+    {
+      String extDescription = extPairs.get(i);
+      String[] extSuffixes = extPairs.get(i + 1).split(";");
+      fileDialog.getExtensionFilters().add(
+        new FileChooser.ExtensionFilter(
+          extDescription, Arrays.asList(extSuffixes)));
+    }
+
+    // Show the save dialog
+    File saveFile = fileDialog.showSaveDialog(view);
+    if (saveFile == null)
+    {
+      return null;
+    }
+
+    return saveFile;
   }
 
   private static UIView.ScoreItem readAndScoreExecutableFile(UIView view,

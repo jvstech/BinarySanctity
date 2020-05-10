@@ -114,15 +114,20 @@ public class PortableExecutableScore extends AggregateScore
     this(peFile, 0.5, allowSlowAnalysis, statusCallback);
   }
 
-  public PortableExecutableFileChannel getPEFile()
+  public Score[] getAllScores()
   {
-    return peFile_;
+    return getFlattenedScores();
   }
 
   @Override
-  public int getValue()
+  public String getDescription()
   {
-    return getTotalScore();
+    return "Malware characterization for a complete PE file";
+  }
+
+  public PortableExecutableFileChannel getPEFile()
+  {
+    return peFile_;
   }
 
   @Override
@@ -132,9 +137,9 @@ public class PortableExecutableScore extends AggregateScore
   }
 
   @Override
-  public String getDescription()
+  public int getValue()
   {
-    return "Malware characterization for a complete PE file";
+    return getTotalScore();
   }
 
   @Override

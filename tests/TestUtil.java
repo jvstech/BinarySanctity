@@ -76,4 +76,50 @@ public class TestUtil
   {
     return new ReadOnlyByteArrayChannel(getHighEntropyNonZeroBytes());
   }
+
+  public static String[] getMalwareFileNames()
+  {
+    return new String[]
+      {
+        "Backdoor.Win32.Banito.ps.b64",
+        "UDS.DangerousObject.Multi.Generic.b64",
+        "Backdoor.Win32.Hupigon.buwj.b64"
+      };
+  }
+
+  public static byte[] getBanitoMalwareBytes()
+    throws IOException, URISyntaxException
+  {
+    return loadAndDecodeBase64(getMalwareFileNames()[0]);
+  }
+
+  public static FileChannel getBanitoMalwareChannel()
+    throws IOException, URISyntaxException
+  {
+    return new ReadOnlyByteArrayChannel(getBanitoMalwareBytes());
+  }
+
+  public static byte[] getDangerousObjectMalwareBytes()
+    throws IOException, URISyntaxException
+  {
+    return loadAndDecodeBase64(getMalwareFileNames()[1]);
+  }
+
+  public static FileChannel getDangerousObjectMalwareChannel()
+    throws IOException, URISyntaxException
+  {
+    return new ReadOnlyByteArrayChannel(getDangerousObjectMalwareBytes());
+  }
+
+  public static byte[] getHupigonMalwareBytes()
+    throws IOException, URISyntaxException
+  {
+    return loadAndDecodeBase64(getMalwareFileNames()[2]);
+  }
+
+  public static FileChannel getHupigonMalwareChannel()
+    throws IOException, URISyntaxException
+  {
+    return new ReadOnlyByteArrayChannel(getHupigonMalwareBytes());
+  }
 }

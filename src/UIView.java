@@ -26,6 +26,52 @@ import java.util.Map;
 
 public class UIView extends Stage
 {
+  // Nested class for hex display formatting of integer/long values
+  public class HexValue implements Comparable<HexValue>
+  {
+    private final long value_;
+
+    public HexValue(long value)
+    {
+      value_ = value;
+    }
+
+    @Override
+    public int compareTo(HexValue rhs)
+    {
+      return Long.compare(value_, rhs.value_);
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+      if (this == o)
+      {
+        return true;
+      }
+
+      if (!(o instanceof HexValue))
+      {
+        return false;
+      }
+
+      HexValue rhs = (HexValue) o;
+      return (value_ == rhs.value_);
+    }
+
+    @Override
+    public int hashCode()
+    {
+      return Long.hashCode(value_);
+    }
+
+    @Override
+    public String toString()
+    {
+      return String.format("0x%x", value_);
+    }
+  }
+
   // Nested class for combining an import name or ordinal with its associated
   // library
   public class ImportItem
@@ -66,206 +112,6 @@ public class UIView extends Stage
     }
   }
 
-  // Nested class for display formatting of section permissions
-  public class SectionPermissions implements Comparable<SectionPermissions>
-  {
-    private final int value_;
-
-    public SectionPermissions()
-    {
-      value_ = 0;
-    }
-
-    public SectionPermissions(int value)
-    {
-      value_ = value;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-      if (this == o)
-      {
-        return true;
-      }
-
-      if (!(o instanceof SectionPermissions))
-      {
-        return false;
-      }
-
-      SectionPermissions rhs = (SectionPermissions)o;
-      return (value_ == rhs.value_);
-    }
-
-    @Override
-    public int hashCode()
-    {
-      return value_;
-    }
-
-    @Override
-    public int compareTo(SectionPermissions rhs)
-    {
-      return Integer.compare(value_, rhs.value_);
-    }
-
-    @Override
-    public String toString()
-    {
-      return String.format("0x%x (%s)", value_,
-        String.join(" ",
-          SectionCharacteristicTypes.getSimpleStrings(value_)));
-    }
-  }
-
-  // Nested class for hex display formatting of integer/long values
-  public class HexValue implements Comparable<HexValue>
-  {
-    private final long value_;
-
-    public HexValue(long value)
-    {
-      value_ = value;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-      if (this == o)
-      {
-        return true;
-      }
-
-      if (!(o instanceof HexValue))
-      {
-        return false;
-      }
-
-      HexValue rhs = (HexValue)o;
-      return (value_ == rhs.value_);
-    }
-
-    @Override
-    public int hashCode()
-    {
-      return Long.hashCode(value_);
-    }
-
-    @Override
-    public int compareTo(HexValue rhs)
-    {
-      return Long.compare(value_, rhs.value_);
-    }
-
-    @Override
-    public String toString()
-    {
-      return String.format("0x%x", value_);
-    }
-  }
-
-  // Nested class holding displayable information about a PE section
-  public class SectionItem
-  {
-    private final SimpleStringProperty name_;
-    private final ObservableValue<SectionPermissions> permissions_;
-    private final SimpleIntegerProperty virtualSize_;
-    private final SimpleIntegerProperty rawSize_;
-    private final ObservableValue<HexValue> virtualOffset_;
-    private final ObservableValue<HexValue> fileOffset_;
-
-    public SectionItem(SectionHeader section)
-    {
-      name_ = new SimpleStringProperty(
-        String.format("\"%s\"", StringUtil.escapeFull(section.getName())));
-
-      SectionPermissions permissions;
-      try
-      {
-        permissions = new SectionPermissions(section.getCharacteristics());
-      }
-      catch (IOException | EndOfStreamException e)
-      {
-        permissions = new SectionPermissions();
-      }
-
-      int virtualSize = 0;
-      try
-      {
-        virtualSize = section.getVirtualSize();
-      }
-      catch (IOException | EndOfStreamException e)
-      {
-      }
-
-      int rawSize = 0;
-      try
-      {
-        rawSize = section.getSizeOfRawData();
-      }
-      catch (IOException | EndOfStreamException e)
-      {
-      }
-
-      HexValue virtualOffset;
-      try
-      {
-        virtualOffset = new HexValue(section.getVirtualAddress());
-      }
-      catch (IOException | EndOfStreamException e)
-      {
-        virtualOffset = new HexValue(0);
-      }
-
-      HexValue fileOffset;
-      try
-      {
-        fileOffset = new HexValue(section.getPointerToRawData());
-      }
-      catch (IOException | EndOfStreamException e)
-      {
-        fileOffset = new HexValue(0);
-      }
-
-      permissions_ = new ReadOnlyObjectWrapper<>(permissions);
-      virtualSize_ = new SimpleIntegerProperty(virtualSize);
-      rawSize_ = new SimpleIntegerProperty(rawSize);
-      virtualOffset_ = new ReadOnlyObjectWrapper<>(virtualOffset);
-      fileOffset_ = new ReadOnlyObjectWrapper<>(fileOffset);
-    }
-
-    public StringProperty nameProperty()
-    {
-      return name_;
-    }
-
-    public ObservableValue<SectionPermissions> permissionsProperty()
-    {
-      return permissions_;
-    }
-
-    public IntegerProperty virtualSizeProperty()
-    {
-      return virtualSize_;
-    }
-
-    public IntegerProperty rawSizeProperty()
-    {
-      return rawSize_;
-    }
-
-    public ObservableValue<HexValue> virtualOffsetProperty()
-    {
-      return virtualOffset_;
-    }
-
-    public ObservableValue<HexValue> fileOffsetProperty()
-    {
-      return fileOffset_;
-    }
-  }
-
   // Nested class for combining a PortableExecutableScore with an executable
   // file name as a ListView item
   public class ScoreItem
@@ -301,8 +147,7 @@ public class UIView extends Stage
             importItems.add(new ImportItem(importName, imports.getKey()));
           }
         }
-      }
-      catch (EndOfStreamException | IOException e)
+      } catch (EndOfStreamException | IOException e)
       {
         e.printStackTrace();
       }
@@ -357,11 +202,6 @@ public class UIView extends Stage
       return importItems_;
     }
 
-    public ObservableList<SectionItem> getSectionItems()
-    {
-      return sectionItems_;
-    }
-
     public PortableExecutableScore getScore()
     {
       return score_;
@@ -375,6 +215,11 @@ public class UIView extends Stage
       }
 
       return "!";
+    }
+
+    public ObservableList<SectionItem> getSectionItems()
+    {
+      return sectionItems_;
     }
 
     public boolean hasException()
@@ -430,14 +275,161 @@ public class UIView extends Stage
         }
 
         setGraphic(content_);
-      }
-      else
+      } else
       {
         setGraphic(null);
       }
     }
   }
 
+  // Nested class holding displayable information about a PE section
+  public class SectionItem
+  {
+    private final SimpleStringProperty name_;
+    private final ObservableValue<SectionPermissions> permissions_;
+    private final SimpleIntegerProperty virtualSize_;
+    private final SimpleIntegerProperty rawSize_;
+    private final ObservableValue<HexValue> virtualOffset_;
+    private final ObservableValue<HexValue> fileOffset_;
+
+    public SectionItem(SectionHeader section)
+    {
+      name_ = new SimpleStringProperty(
+        String.format("\"%s\"", StringUtil.escapeFull(section.getName())));
+
+      SectionPermissions permissions;
+      try
+      {
+        permissions = new SectionPermissions(section.getCharacteristics());
+      } catch (IOException | EndOfStreamException e)
+      {
+        permissions = new SectionPermissions();
+      }
+
+      int virtualSize = 0;
+      try
+      {
+        virtualSize = section.getVirtualSize();
+      } catch (IOException | EndOfStreamException e)
+      {
+      }
+
+      int rawSize = 0;
+      try
+      {
+        rawSize = section.getSizeOfRawData();
+      } catch (IOException | EndOfStreamException e)
+      {
+      }
+
+      HexValue virtualOffset;
+      try
+      {
+        virtualOffset = new HexValue(section.getVirtualAddress());
+      } catch (IOException | EndOfStreamException e)
+      {
+        virtualOffset = new HexValue(0);
+      }
+
+      HexValue fileOffset;
+      try
+      {
+        fileOffset = new HexValue(section.getPointerToRawData());
+      } catch (IOException | EndOfStreamException e)
+      {
+        fileOffset = new HexValue(0);
+      }
+
+      permissions_ = new ReadOnlyObjectWrapper<>(permissions);
+      virtualSize_ = new SimpleIntegerProperty(virtualSize);
+      rawSize_ = new SimpleIntegerProperty(rawSize);
+      virtualOffset_ = new ReadOnlyObjectWrapper<>(virtualOffset);
+      fileOffset_ = new ReadOnlyObjectWrapper<>(fileOffset);
+    }
+
+    public ObservableValue<HexValue> fileOffsetProperty()
+    {
+      return fileOffset_;
+    }
+
+    public StringProperty nameProperty()
+    {
+      return name_;
+    }
+
+    public ObservableValue<SectionPermissions> permissionsProperty()
+    {
+      return permissions_;
+    }
+
+    public IntegerProperty rawSizeProperty()
+    {
+      return rawSize_;
+    }
+
+    public ObservableValue<HexValue> virtualOffsetProperty()
+    {
+      return virtualOffset_;
+    }
+
+    public IntegerProperty virtualSizeProperty()
+    {
+      return virtualSize_;
+    }
+  }
+
+  // Nested class for display formatting of section permissions
+  public class SectionPermissions implements Comparable<SectionPermissions>
+  {
+    private final int value_;
+
+    public SectionPermissions()
+    {
+      value_ = 0;
+    }
+
+    public SectionPermissions(int value)
+    {
+      value_ = value;
+    }
+
+    @Override
+    public int compareTo(SectionPermissions rhs)
+    {
+      return Integer.compare(value_, rhs.value_);
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+      if (this == o)
+      {
+        return true;
+      }
+
+      if (!(o instanceof SectionPermissions))
+      {
+        return false;
+      }
+
+      SectionPermissions rhs = (SectionPermissions) o;
+      return (value_ == rhs.value_);
+    }
+
+    @Override
+    public int hashCode()
+    {
+      return value_;
+    }
+
+    @Override
+    public String toString()
+    {
+      return String.format("0x%x (%s)", value_,
+        String.join(" ",
+          SectionCharacteristicTypes.getSimpleStrings(value_)));
+    }
+  }
   public static final int WIDTH = 800;
   public static final int HEIGHT = 600;
 
@@ -454,6 +446,10 @@ public class UIView extends Stage
   private Button removeButton_;
   private Button clearButton_;
   private Button cancelButton_;
+  private Button exportXmlButton_;
+  private Button exportAllXmlButton_;
+  private Button exportReportButton_;
+  private Button exportAllReportButton_;
 
   // "Analyze text" checkbox
   private CheckBox analyzeTextCheckBox_;
@@ -492,6 +488,11 @@ public class UIView extends Stage
     return addFolderButton_;
   }
 
+  public CheckBox getAnalyzeTextCheckBox()
+  {
+    return analyzeTextCheckBox_;
+  }
+
   public Button getCancelButton()
   {
     return cancelButton_;
@@ -502,11 +503,6 @@ public class UIView extends Stage
     return clearButton_;
   }
 
-  public CheckBox getAnalyzeTextCheckBox()
-  {
-    return analyzeTextCheckBox_;
-  }
-
   public ListView<ScoreItem> getFileListView()
   {
     return fileListView_;
@@ -515,11 +511,6 @@ public class UIView extends Stage
   public TableView<ImportItem> getImportsTableView()
   {
     return importsTableView_;
-  }
-
-  public TableView<SectionItem> getSectionsTableView()
-  {
-    return sectionsTableView_;
   }
 
   public TextArea getMalwareScoreText()
@@ -537,6 +528,11 @@ public class UIView extends Stage
     return removeButton_;
   }
 
+  public TableView<SectionItem> getSectionsTableView()
+  {
+    return sectionsTableView_;
+  }
+
   public DoubleProperty progressProperty()
   {
     return progressBar_.progressProperty();
@@ -549,10 +545,21 @@ public class UIView extends Stage
 
   public static void showError(String errorMessage, String errorTitle)
   {
-    Alert errorAlert = new Alert(Alert.AlertType.WARNING, errorMessage);
-    errorAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-    errorAlert.setTitle(errorTitle);
-    errorAlert.showAndWait();
+    showMessage(errorMessage, errorTitle, Alert.AlertType.WARNING);
+  }
+
+  public static void showInformation(String message, String title)
+  {
+    showMessage(message, title, Alert.AlertType.INFORMATION);
+  }
+
+  public static void showMessage(String message, String title,
+    Alert.AlertType alertType)
+  {
+    Alert alert = new Alert(alertType, message);
+    alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+    alert.setTitle(title);
+    alert.showAndWait();
   }
 
   public static void stylize(Scene scene)
@@ -594,6 +601,28 @@ public class UIView extends Stage
     cancelButton_ = new Button("Cancel");
     cancelButton_.setOnAction(event -> UICommands.stopAllTasks());
     buttonBar_.getChildren().add(cancelButton_);
+
+    // "Export XML" button
+    exportXmlButton_ = new Button("Export XML");
+    exportXmlButton_.setOnAction(event -> UICommands.exportXml(this, false));
+    buttonBar_.getChildren().add(exportXmlButton_);
+
+    // "Export Full XML" button
+    exportAllXmlButton_ = new Button("Export Full XML");
+    exportAllXmlButton_.setOnAction(event -> UICommands.exportXml(this, true));
+    buttonBar_.getChildren().add(exportAllXmlButton_);
+
+    // "Export Report" button
+    exportReportButton_ = new Button("Export Report");
+    exportReportButton_.setOnAction(
+      event -> UICommands.exportText(this, false));
+    buttonBar_.getChildren().add(exportReportButton_);
+
+    // "Export Full Report" button
+    exportAllReportButton_ = new Button("Export Full Report");
+    exportAllReportButton_.setOnAction(
+      event -> UICommands.exportText(this, true));
+    buttonBar_.getChildren().add(exportAllReportButton_);
 
     // "Analyze text" checkbox (might as well put it here since it's part of the
     // button bar)
